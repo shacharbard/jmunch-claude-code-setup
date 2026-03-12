@@ -248,11 +248,11 @@ The `track-genuine-savings.sh` hook writes to `~/.code-index/_genuine_savings.js
 }
 ```
 
-### Genuine vs Overestimated
+### Genuine vs Optimistic
 
 Only tools that actually replace a `Read` are counted:
 
-| Directly replaces Read (counted) | Overestimated (skipped) |
+| Directly replaces Read (counted) | Optimistic (skipped) |
 |---|---|
 | `get_symbol`, `get_symbols` | `get_file_outline`, `get_repo_outline` |
 | `search_symbols`, `search_text` | `get_file_tree` |

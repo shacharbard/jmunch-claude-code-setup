@@ -40,7 +40,7 @@ format_tokens() {
     fi
 }
 
-# Read genuine savings (not the overestimated _savings.json)
+# Read genuine savings (not the optimistic _savings.json)
 genuine_file="$HOME/.code-index/_genuine_savings.json"
 jcm_raw=0; jdm_raw=0
 if [ -f "$genuine_file" ]; then

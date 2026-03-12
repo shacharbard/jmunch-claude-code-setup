@@ -107,11 +107,11 @@ Claude commits
 
 ### Genuine Token Savings (`_genuine_savings.json`)
 
-Both MCP servers report a `tokens_saved` field in every response's `_meta`. However, not all reported savings reflect actual token reduction — tools like `get_file_outline` return a small summary and report savings as if you would have read the entire file, when in practice you wouldn't have. These overestimated counts can make the totals appear 3-5x higher than reality.
+Both MCP servers report a `tokens_saved` field in every response's `_meta`. However, not all reported savings reflect actual token reduction — tools like `get_file_outline` return a small summary and report savings as if you would have read the entire file, when in practice you wouldn't have. These optimistic counts can make the totals appear 3-5x higher than reality.
 
 The `track-genuine-savings.sh` hook addresses this by filtering. It only counts savings from tools that **actually replace a `Read`** — i.e., tools where Claude would have had to read the full file if the MCP server weren't available.
 
-| Directly replaces Read (counted) | Overestimated (skipped) |
+| Directly replaces Read (counted) | Optimistic (skipped) |
 |---|---|
 | `get_symbol` | `get_file_outline` |
 | `get_symbols` | `get_repo_outline` |
@@ -160,7 +160,7 @@ The statusline scripts read `_genuine_savings.json` and split the `by_tool` tota
 
 These are formatted with K/M suffixes and displayed as `JCM:920.376K JDM:2.108K`.
 
-> **Note:** The MCP servers also write their own `_savings.json` files (`~/.code-index/_savings.json` and `~/.doc-index/_savings.json`) with `total_tokens_saved` — but those include overestimated counts from all tools. The statusline deliberately reads the genuine file, not those.
+> **Note:** The MCP servers also write their own `_savings.json` files (`~/.code-index/_savings.json` and `~/.doc-index/_savings.json`) with `total_tokens_saved` — but those include optimistic counts from all tools. The statusline deliberately reads the genuine file, not those.
 
 ## Statusline
 

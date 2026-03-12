@@ -1,11 +1,13 @@
 # jCodeMunch + jDocMunch Setup for Claude Code
 
-A complete, production-tested setup for [jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp) and [jDocMunch](https://github.com/jgravelle/jdocmunch-mcp) MCP servers in Claude Code — including enforcement hooks, CLAUDE.md rules, token savings tracking, and statusline integration.
+Hooks, rules, and statusline integration for [jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp) and [jDocMunch](https://github.com/jgravelle/jdocmunch-mcp) — two excellent MCP servers created by [J. Gravelle (jgravelle)](https://github.com/jgravelle) that dramatically reduce token usage in Claude Code.
 
-## What This Does
+> **Credit where it's due:** jCodeMunch and jDocMunch are built and maintained by [J. Gravelle](https://github.com/jgravelle). This repo does not contain those MCP servers — it provides a companion enforcement and tracking layer that helps Claude Code get the most out of them. All the clever indexing and symbol extraction is jgravelle's work.
 
-- **jCodeMunch** indexes your code (Python, TypeScript) so Claude fetches individual functions instead of reading entire files. Saves ~85-95% of tokens on code exploration.
-- **jDocMunch** indexes your docs (.md, .mdx, .rst) so Claude fetches specific sections instead of entire documents. Saves ~90-95% on doc lookups.
+## What jCodeMunch & jDocMunch Do
+
+- **[jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp)** (by jgravelle) indexes your code (Python, TypeScript) so Claude fetches individual functions instead of reading entire files. Saves ~85-95% of tokens on code exploration.
+- **[jDocMunch](https://github.com/jgravelle/jdocmunch-mcp)** (by jgravelle) indexes your docs (.md, .mdx, .rst) so Claude fetches specific sections instead of entire documents. Saves ~90-95% on doc lookups.
 
 This repo provides the full enforcement stack that makes Claude **actually use** these tools instead of falling back to `Read`:
 

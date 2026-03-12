@@ -1,7 +1,7 @@
 #!/bin/bash
 # PostToolUse hook: Track genuine token savings from jCodeMunch/jDocMunch
 # Only counts tools where savings are real (symbol fetch, content slice, search)
-# Skips inflated tools (get_file_outline, get_repo_outline, get_file_tree, index_*)
+# Skips overestimated tools (get_file_outline, get_repo_outline, get_file_tree, index_*)
 #
 # Writes to ~/.code-index/_genuine_savings.json
 #

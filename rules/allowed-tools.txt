@@ -1,0 +1,27 @@
+# Add these to your .claude/settings.local.json under "allowedTools"
+# This prevents Claude from asking permission on every MCP tool call.
+
+mcp__jcodemunch__get_symbol
+mcp__jcodemunch__get_symbols
+mcp__jcodemunch__search_symbols
+mcp__jcodemunch__search_text
+mcp__jcodemunch__get_file_content
+mcp__jcodemunch__get_file_outline
+mcp__jcodemunch__get_file_tree
+mcp__jcodemunch__get_repo_outline
+mcp__jcodemunch__index_folder
+mcp__jcodemunch__index_repo
+mcp__jcodemunch__invalidate_cache
+mcp__jcodemunch__list_repos
+mcp__jcodemunch__find_importers
+mcp__jcodemunch__find_references
+mcp__jdocmunch__index_local
+mcp__jdocmunch__index_repo
+mcp__jdocmunch__list_repos
+mcp__jdocmunch__get_toc
+mcp__jdocmunch__get_toc_tree
+mcp__jdocmunch__get_document_outline
+mcp__jdocmunch__search_sections
+mcp__jdocmunch__get_section
+mcp__jdocmunch__get_sections
+mcp__jdocmunch__delete_index

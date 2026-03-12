@@ -1,0 +1,45 @@
+#!/bin/bash
+# PostToolUse hook for mcp__jcodemunch__index_folder and mcp__jdocmunch__index_local
+# Writes sentinel lines to mark each index as refreshed for this session.
+# Uses PPID (Claude Code PID) as session identifier.
+#
+# Install: Copy to .claude/hooks/ in your project
+# Register: PostToolUse matchers for both index tools in project .claude/settings.json
+# Paired with: jmunch-session-gate.sh, jmunch-session-start.sh
+
+SENTINEL="/tmp/jmunch-session-ready-${PPID}"
+
+INPUT=$(cat)
+TOOL=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('tool_name',''))" 2>/dev/null)
+
+case "$TOOL" in
+  mcp__jcodemunch__index_folder)
+    grep -q '^code$' "$SENTINEL" 2>/dev/null || echo "code" >> "$SENTINEL"
+    ;;
+  mcp__jdocmunch__index_local)
+    grep -q '^doc$' "$SENTINEL" 2>/dev/null || echo "doc" >> "$SENTINEL"
+    ;;
+esac
+
+# Check if both are now ready
+if [ -f "$SENTINEL" ]; then
+  HAS_CODE=$(grep -c '^code$' "$SENTINEL" 2>/dev/null | head -1 || echo 0)
+  HAS_DOC=$(grep -c '^doc$' "$SENTINEL" 2>/dev/null | head -1 || echo 0)
+  if [ "${HAS_CODE:-0}" -gt 0 ] 2>/dev/null && [ "${HAS_DOC:-0}" -gt 0 ] 2>/dev/null; then
+    echo "jCodeMunch + jDocMunch indexes refreshed — all tools unblocked for this session."
+    exit 0
+  fi
+fi
+
+# Tell the user which one is still pending
+if [ -f "$SENTINEL" ]; then
+  HAS_CODE=$(grep -c '^code$' "$SENTINEL" 2>/dev/null | head -1 || echo 0)
+  HAS_DOC=$(grep -c '^doc$' "$SENTINEL" 2>/dev/null | head -1 || echo 0)
+  if [ "${HAS_CODE:-0}" -gt 0 ] 2>/dev/null; then
+    echo "jCodeMunch indexed. Still waiting for jDocMunch (mcp__jdocmunch__index_local)."
+  elif [ "${HAS_DOC:-0}" -gt 0 ] 2>/dev/null; then
+    echo "jDocMunch indexed. Still waiting for jCodeMunch (mcp__jcodemunch__index_folder)."
+  fi
+else
+  echo "First index done. Still waiting for the other one before tools are unblocked."
+fi

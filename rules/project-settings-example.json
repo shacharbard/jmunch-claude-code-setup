@@ -1,0 +1,94 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/jmunch-session-start.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/jmunch-session-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/jcodemunch-nudge.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/jdocmunch-nudge.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/agent-jcodemunch-gate.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__jcodemunch__index_folder",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/jmunch-sentinel-writer.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__jdocmunch__index_local",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/jmunch-sentinel-writer.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/reindex-after-commit.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__jcodemunch__*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/track-genuine-savings.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__jdocmunch__*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/track-genuine-savings.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

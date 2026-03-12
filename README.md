@@ -105,11 +105,13 @@ Claude commits
   -> All tools blocked until re-index
 ```
 
-### Genuine vs Inflated Savings
+### Genuine Token Savings (`_genuine_savings.json`)
 
-The tracking hook only counts savings from tools that actually replace a `Read`:
+Both MCP servers report a `tokens_saved` field in every response's `_meta`. But not all reported savings are real — tools like `get_file_outline` return a small summary and claim they "saved" you from reading the whole file, even though you never would have read the whole file just to see an outline. If you count those, the numbers are inflated 3-5x.
 
-| Genuine (counts) | Inflated (skipped) |
+The `track-genuine-savings.sh` hook solves this by filtering. It only counts savings from tools that **actually replace a `Read`** — i.e., tools where Claude would have had to read the full file if the MCP server weren't available.
+
+| Genuine (counted) | Inflated (skipped) |
 |---|---|
 | `get_symbol` | `get_file_outline` |
 | `get_symbols` | `get_repo_outline` |
@@ -119,6 +121,46 @@ The tracking hook only counts savings from tools that actually replace a `Read`:
 | `get_section` | `index_local` |
 | `get_sections` | `list_repos` |
 | `search_sections` | `invalidate_cache` |
+
+> **Special case:** `get_file_content` is only counted as genuine when called with `start_line` or `end_line` parameters (a sliced read). Without line ranges it returns the full file — same as `Read`, no savings.
+
+#### Where the file lives
+
+```
+~/.code-index/_genuine_savings.json
+```
+
+This file is created automatically on the first genuine MCP tool call. It accumulates across sessions.
+
+#### What it looks like
+
+```json
+{
+  "total_genuine_tokens_saved": 920376,
+  "by_tool": {
+    "mcp__jcodemunch__get_symbol": 260902,
+    "mcp__jcodemunch__search_symbols": 243247,
+    "mcp__jcodemunch__get_file_content": 414119,
+    "mcp__jdocmunch__search_sections": 2108
+  },
+  "call_counts": {
+    "mcp__jcodemunch__get_symbol": 23,
+    "mcp__jcodemunch__search_symbols": 12,
+    "mcp__jcodemunch__get_file_content": 8,
+    "mcp__jdocmunch__search_sections": 1
+  }
+}
+```
+
+#### How it flows into the statusline
+
+The statusline scripts read `_genuine_savings.json` and split the `by_tool` totals by prefix:
+- `mcp__jcodemunch__*` entries sum to **JCM** (jCodeMunch savings)
+- `mcp__jdocmunch__*` entries sum to **JDM** (jDocMunch savings)
+
+These are formatted with K/M suffixes and displayed as `JCM:920.376K JDM:2.108K`.
+
+> **Note:** The MCP servers also write their own `_savings.json` files (`~/.code-index/_savings.json` and `~/.doc-index/_savings.json`) with `total_tokens_saved` — but those include inflated counts from all tools. The statusline deliberately reads the genuine file, not those.
 
 ## Statusline
 

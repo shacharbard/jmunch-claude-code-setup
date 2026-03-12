@@ -109,7 +109,9 @@ Claude commits
 
 ### Genuine Token Savings (`_genuine_savings.json`)
 
-Both MCP servers report a `tokens_saved` field in every response's `_meta`. However, not all reported savings reflect actual token reduction — tools like `get_file_outline` return a small summary and report savings as if you would have read the entire file, when in practice you wouldn't have. These optimistic counts can make the totals appear 3-5x higher than reality.
+Both MCP servers report a `tokens_saved` field in every response's `_meta` — a helpful feature built into jCodeMunch and jDocMunch by jgravelle. The reported numbers represent the *theoretical maximum* savings (the full file size minus the returned content), which is a perfectly reasonable way to measure it. In practice, though, some tools like `get_file_outline` serve a different purpose than replacing a full `Read`, so counting their savings alongside direct replacements can paint an optimistic picture of actual token reduction.
+
+> **Note:** This distinction is purely about how *we* choose to measure savings for our statusline — it is not a criticism of the MCP servers or their reporting. The `tokens_saved` field works exactly as designed.
 
 The `track-genuine-savings.sh` hook addresses this by filtering. It only counts savings from tools that **actually replace a `Read`** — i.e., tools where Claude would have had to read the full file if the MCP server weren't available.
 

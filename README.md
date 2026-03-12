@@ -173,4 +173,6 @@ The `agent-jcodemunch-gate.sh` hook enforces this — spawning is blocked if the
 
 ## License
 
-MIT
+The hooks, rules, statusline scripts, and documentation in this repository are licensed under the [MIT License](LICENSE).
+
+This repo does **not** include the jCodeMunch or jDocMunch MCP servers themselves — only configuration and enforcement tooling that works with them. The MCP servers are separate projects by [jgravelle](https://github.com/jgravelle) and are subject to their own licenses. See [jcodemunch-mcp](https://github.com/jgravelle/jcodemunch-mcp) and [jdocmunch-mcp](https://github.com/jgravelle/jdocmunch-mcp) for their respective terms.

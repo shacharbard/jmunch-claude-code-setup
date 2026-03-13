@@ -19,11 +19,12 @@ fi
 HASH=$(echo "$CWD" | md5 -q 2>/dev/null || echo "$CWD" | md5sum 2>/dev/null | cut -c1-32)
 SENTINEL="/tmp/jmunch-ready-${HASH}"
 
-# If sentinel has both "code" and "doc" lines, session is ready — allow everything
+# If sentinel has both "code" and "doc" lines AND no "stale" marker, session is ready
 if [ -f "$SENTINEL" ]; then
   HAS_CODE=$(grep -c '^code$' "$SENTINEL" 2>/dev/null | head -1 || echo 0)
   HAS_DOC=$(grep -c '^doc$' "$SENTINEL" 2>/dev/null | head -1 || echo 0)
-  if [ "${HAS_CODE:-0}" -gt 0 ] 2>/dev/null && [ "${HAS_DOC:-0}" -gt 0 ] 2>/dev/null; then
+  IS_STALE=$(grep -c '^stale$' "$SENTINEL" 2>/dev/null | head -1 || echo 0)
+  if [ "${HAS_CODE:-0}" -gt 0 ] 2>/dev/null && [ "${HAS_DOC:-0}" -gt 0 ] 2>/dev/null && [ "${IS_STALE:-0}" -eq 0 ] 2>/dev/null; then
     exit 0
   fi
 fi

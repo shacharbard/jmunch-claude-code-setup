@@ -31,7 +31,11 @@ if [ -f "$SENTINEL" ]; then
   HAS_CODE=$(grep -c '^code$' "$SENTINEL" 2>/dev/null | head -1 || echo 0)
   HAS_DOC=$(grep -c '^doc$' "$SENTINEL" 2>/dev/null | head -1 || echo 0)
   if [ "${HAS_CODE:-0}" -gt 0 ] 2>/dev/null && [ "${HAS_DOC:-0}" -gt 0 ] 2>/dev/null; then
-    echo "jCodeMunch + jDocMunch indexes refreshed — all tools unblocked for this session."
+    # Remove stale marker now that both indexes are fresh
+    if grep -q '^stale$' "$SENTINEL" 2>/dev/null; then
+      grep -v '^stale$' "$SENTINEL" > "${SENTINEL}.tmp" && mv "${SENTINEL}.tmp" "$SENTINEL"
+    fi
+    echo "jCodeMunch + jDocMunch indexes refreshed — all tools unblocked."
     exit 0
   fi
 fi

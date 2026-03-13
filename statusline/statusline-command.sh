@@ -64,8 +64,13 @@ if [ -f "$history_file" ]; then
   jcm_today=$(jq -s --arg d "$today" '[.[] | select(.ts[:10] == $d) | .tokens_saved] | add // 0' "$history_file" 2>/dev/null || echo "0")
 fi
 
+# CTX savings from context-mode tracker (context-mode-jmunch-bridge)
+ctx_file="$HOME/.code-index/_genuine_savings_ctx.json"
+ctx_raw=0
+[ -f "$ctx_file" ] && ctx_raw=$(jq -r '.total_genuine_tokens_saved // 0' "$ctx_file" 2>/dev/null || echo "0")
+
 jmunch_suffix=""
-if [ "$jcm_raw" -gt 0 ] 2>/dev/null || [ "$jdm_raw" -gt 0 ] 2>/dev/null; then
+if [ "$jcm_raw" -gt 0 ] 2>/dev/null || [ "$jdm_raw" -gt 0 ] 2>/dev/null || [ "$ctx_raw" -gt 0 ] 2>/dev/null; then
   jcm=$(format_tokens "$jcm_raw")
   jdm=$(format_tokens "$jdm_raw")
   D=$'\033[2m'
@@ -77,7 +82,12 @@ if [ "$jcm_raw" -gt 0 ] 2>/dev/null || [ "$jdm_raw" -gt 0 ] 2>/dev/null; then
     jcm_td=$(format_tokens "$jcm_today")
     today_part=" ${D}(${X}${Y}today:${jcm_td}${X}${D})${X}"
   fi
-  jmunch_suffix=" ${D}|${X} ${C}JCM:${jcm}${today_part} JDM:${jdm}${X}"
+  ctx_part=""
+  if [ "$ctx_raw" -gt 0 ] 2>/dev/null; then
+    ctx=$(format_tokens "$ctx_raw")
+    ctx_part=" CTX:${ctx}"
+  fi
+  jmunch_suffix=" ${D}|${X} ${C}JCM:${jcm}${today_part} JDM:${jdm}${ctx_part}${X}"
 fi
 
 # Append jmunch savings to the last line (L4: Model/time line)

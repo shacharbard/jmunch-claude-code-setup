@@ -35,7 +35,9 @@ fi
 HASH=$(echo "$CWD" | md5 -q 2>/dev/null || echo "$CWD" | md5sum 2>/dev/null | cut -c1-32)
 SENTINEL="/tmp/jmunch-ready-${HASH}"
 
-grep -q '^stale$' "$SENTINEL" 2>/dev/null || echo "stale" >> "$SENTINEL"
+# Overwrite sentinel with ONLY "stale" — removes old "code"/"doc" lines
+# so the sentinel-writer must re-add them after BOTH indexes run.
+echo "stale" > "$SENTINEL"
 
 cat <<'EOF'
 HARD BLOCK: Commit detected — jCodeMunch/jDocMunch indexes are now STALE.

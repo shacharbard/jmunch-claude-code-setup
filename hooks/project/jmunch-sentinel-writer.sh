@@ -1,15 +1,20 @@
 #!/bin/bash
 # PostToolUse hook for mcp__jcodemunch__index_folder and mcp__jdocmunch__index_local
 # Writes sentinel lines to mark each index as refreshed for this session.
-# Uses PPID (Claude Code PID) as session identifier.
+# Sentinel hash is derived from project directory (stable across wrappers/subagents).
 #
 # Install: Copy to .claude/hooks/ in your project
 # Register: PostToolUse matchers for both index tools in project .claude/settings.json
 # Paired with: jmunch-session-gate.sh, jmunch-session-start.sh
 
-SENTINEL="/tmp/jmunch-session-ready-${PPID}"
-
 INPUT=$(cat)
+CWD=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('cwd',''))" 2>/dev/null)
+if [ -z "$CWD" ]; then
+  CWD=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+fi
+HASH=$(echo "$CWD" | md5 -q 2>/dev/null || echo "$CWD" | md5sum 2>/dev/null | cut -c1-32)
+SENTINEL="/tmp/jmunch-ready-${HASH}"
+
 TOOL=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('tool_name',''))" 2>/dev/null)
 
 case "$TOOL" in

@@ -8,9 +8,17 @@
 # Paired with: jmunch-session-gate.sh (blocks tools until indexes are ready)
 #              jmunch-sentinel-writer.sh (marks indexes as ready)
 
-SENTINEL="/tmp/jmunch-session-ready-${PPID}"
+# Derive sentinel from project directory (stable across wrappers/subagents)
+# Uses cwd from hook JSON stdin, falls back to git root or pwd
+INPUT=$(cat)
+CWD=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('cwd',''))" 2>/dev/null)
+if [ -z "$CWD" ]; then
+  CWD=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+fi
+HASH=$(echo "$CWD" | md5 -q 2>/dev/null || echo "$CWD" | md5sum 2>/dev/null | cut -c1-32)
+SENTINEL="/tmp/jmunch-ready-${HASH}"
 
-# Clean up stale sentinel from any previous session with same PID
+# Clean up stale sentinel from any previous session
 rm -f "$SENTINEL"
 
 cat <<'PROMPT'

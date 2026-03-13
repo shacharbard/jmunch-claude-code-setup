@@ -103,8 +103,8 @@ Claude edits a file
   -> Prompts Claude to re-run index_folder/index_local
 
 Claude commits
-  -> reindex-after-commit.sh clears sentinel
-  -> All tools blocked until re-index
+  -> reindex-after-commit.sh nudges Claude to re-index
+  -> Soft nudge (no sentinel deletion) — safe for subagents
 ```
 
 ### Genuine Token Savings (`_genuine_savings.json`)

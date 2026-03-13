@@ -3,14 +3,21 @@
 # Exit 2 = block the tool call with message
 # Exit 0 = allow
 #
-# Sentinel: /tmp/jmunch-session-ready-<PPID>
-# PPID = Claude Code process ID, stable per session, dies on restart.
+# Sentinel: /tmp/jmunch-ready-<hash of cwd>
+# Hash is derived from project directory, stable across process wrappers and subagents.
 #
 # Install: Copy to .claude/hooks/ in your project
 # Register: PreToolUse matcher "*" in project .claude/settings.json
 # Paired with: jmunch-session-start.sh, jmunch-sentinel-writer.sh
 
-SENTINEL="/tmp/jmunch-session-ready-${PPID}"
+# Read stdin once — we need it for both sentinel hash and tool name
+INPUT=$(cat)
+CWD=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('cwd',''))" 2>/dev/null)
+if [ -z "$CWD" ]; then
+  CWD=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+fi
+HASH=$(echo "$CWD" | md5 -q 2>/dev/null || echo "$CWD" | md5sum 2>/dev/null | cut -c1-32)
+SENTINEL="/tmp/jmunch-ready-${HASH}"
 
 # If sentinel has both "code" and "doc" lines, session is ready — allow everything
 if [ -f "$SENTINEL" ]; then
@@ -21,8 +28,7 @@ if [ -f "$SENTINEL" ]; then
   fi
 fi
 
-# Read tool name from hook input
-INPUT=$(cat)
+# Extract tool name from the already-read input
 TOOL=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('tool_name',''))" 2>/dev/null)
 
 # Always allow: jCodeMunch/jDocMunch tools (needed to CREATE the sentinel)

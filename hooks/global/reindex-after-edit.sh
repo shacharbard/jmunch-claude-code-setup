@@ -21,7 +21,8 @@ esac
 # Debounce: skip if we re-indexed within the last 30 seconds
 STAMP="/tmp/jcm-reindex-stamp-$(id -u)"
 if [ -f "$STAMP" ]; then
-  LAST=$(stat -f %m "$STAMP" 2>/dev/null || stat -c %Y "$STAMP" 2>/dev/null || echo 0)
+  # Linux syntax first (more common), then macOS fallback
+  LAST=$(stat -c %Y "$STAMP" 2>/dev/null) || LAST=$(stat -f %m "$STAMP" 2>/dev/null) || LAST=0
   NOW=$(date +%s)
   [ $((NOW - LAST)) -lt 30 ] && exit 0
 fi

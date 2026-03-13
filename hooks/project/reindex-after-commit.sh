@@ -1,11 +1,15 @@
 #!/bin/bash
-# PostToolUse:Bash hook — clear sentinel + force re-index after git commits
-# Clearing the sentinel blocks all tools until indexes are refreshed again.
-# Uses PPID (Claude Code PID) as session identifier.
+# PostToolUse:Bash hook — soft nudge to re-index after git commits
+# Uses a stdout message (not sentinel deletion) to avoid subagent deadlocks.
+#
+# Why soft nudge instead of hard block:
+#   Subagents share the sentinel file but their PostToolUse hooks do NOT fire
+#   the sentinel-writer. If a subagent commits and deletes the sentinel, no
+#   subagent can recreate it — permanent deadlock. A soft nudge is safe for
+#   both main sessions and subagents.
 #
 # Install: Copy to .claude/hooks/ in your project
 # Register: PostToolUse matcher "Bash" in project .claude/settings.json
-# Paired with: jmunch-session-gate.sh (enforces the block)
 
 INPUT=$(cat)
 CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
@@ -22,14 +26,9 @@ case "$OUTPUT" in
   *"nothing to commit"*|*"no changes"*) exit 0 ;;
 esac
 
-# Clear the sentinel — this blocks all tools until re-index
-SENTINEL="/tmp/jmunch-session-ready-${PPID}"
-rm -f "$SENTINEL"
-
 cat <<'EOF'
-Commit detected — jCodeMunch/jDocMunch indexes are now stale.
-Run BOTH of these immediately (they are fast, incremental):
+Commit detected — jCodeMunch/jDocMunch indexes may be stale.
+Run BOTH of these now (they are fast, incremental):
   1. mcp__jcodemunch__index_folder(path='.', incremental=true, use_ai_summaries=false)
   2. mcp__jdocmunch__index_local(path='.', use_ai_summaries=false)
-All other tools are BLOCKED until both indexes are refreshed.
 EOF

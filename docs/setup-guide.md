@@ -136,7 +136,7 @@ chmod +x .claude/hooks/*.sh
 | `jdocmunch-nudge.sh` | PreToolUse:Read | **Blocks** Read on large .md/.mdx/.rst files |
 | `agent-jcodemunch-gate.sh` | PreToolUse:Agent | **Blocks** agent spawn without MCP instructions |
 | `reindex-after-edit.sh` | PostToolUse:Write\|Edit | Prompts re-index after code/doc changes (30s debounce) |
-| `reindex-after-commit.sh` | PostToolUse:Bash | Clears sentinel after git commits, forces re-index |
+| `reindex-after-commit.sh` | PostToolUse:Bash | Soft nudge to re-index after git commits (subagent-safe) |
 | `track-genuine-savings.sh` | PostToolUse:mcp__j*__ | Tracks genuine token savings to JSON |
 
 ---
@@ -332,8 +332,8 @@ Claude edits a file
   -> Prompts Claude to re-run index_folder/index_local
 
 Claude commits
-  -> reindex-after-commit.sh clears sentinel
-  -> All tools blocked until re-index
+  -> reindex-after-commit.sh nudges Claude to re-index
+  -> Soft nudge (no sentinel deletion) — safe for subagents
 
 Statusline renders
   -> Reads _genuine_savings.json

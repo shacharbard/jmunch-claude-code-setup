@@ -30,6 +30,19 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/jdocmunch-nudge.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/context-mode-nudge.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/context-mode-bash-nudge.sh"
           }
         ]
       },
@@ -86,6 +99,15 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/track-genuine-savings.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__context-mode__*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/track-genuine-savings-ctx.sh"
           }
         ]
       }

@@ -9,6 +9,11 @@
       "command": "jdocmunch-mcp",
       "args": [],
       "type": "stdio"
+    },
+    "context-mode": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "context-mode"]
     }
   }
 }

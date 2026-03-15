@@ -36,38 +36,49 @@ format_tokens() {
   fi
 }
 
-# Use GENUINE savings (filtered by track-genuine-savings.sh hook)
-# Aggregates across all per-agent files: _genuine_savings.json, _genuine_savings_{agent}.json
-# Falls back to _savings.json if no genuine files exist yet
-genuine_dir="$HOME/.code-index"
-fallback_file="$HOME/.code-index/_savings.json"
-jdm_file="$HOME/.doc-index/_savings.json"
-
-jcm_raw=0; jdm_raw=0
-
-# Compute all-time total from JSONL history (consistent with today's calculation)
-# The _genuine_savings.json resets per session, but history accumulates across all sessions
+# Use GENUINE savings from JSONL history files
+# history tracks all jCodeMunch + jDocMunch events (split by tool prefix)
+# ctx_history tracks all context-mode events
 history_file="$HOME/.code-index/_genuine_savings_history.jsonl"
-if [ -f "$history_file" ]; then
-  jcm_raw=$(jq -s '[.[].tokens_saved] | add // 0' "$history_file" 2>/dev/null || echo "0")
-elif ls "$genuine_dir"/_genuine_savings*.json 1>/dev/null 2>&1; then
-  jcm_raw=$(jq -s '[.[].total_genuine_tokens_saved // 0] | add // 0' "$genuine_dir"/_genuine_savings*.json 2>/dev/null || echo "0")
-elif [ -f "$fallback_file" ]; then
-  jcm_raw=$(jq -r '.total_tokens_saved // 0' "$fallback_file" 2>/dev/null || echo "0")
-fi
-[ -f "$jdm_file" ] && jdm_raw=$(jq -r '.total_tokens_saved // 0' "$jdm_file" 2>/dev/null || echo "0")
-
-# Compute today's savings from JSONL history
-today=$(date -u +%Y-%m-%d)
-jcm_today=0
-if [ -f "$history_file" ]; then
-  jcm_today=$(jq -s --arg d "$today" '[.[] | select(.ts[:10] == $d) | .tokens_saved] | add // 0' "$history_file" 2>/dev/null || echo "0")
-fi
-
-# CTX savings from context-mode tracker (context-mode-jmunch-bridge)
+ctx_history_file="$HOME/.code-index/_genuine_savings_ctx_history.jsonl"
 ctx_file="$HOME/.code-index/_genuine_savings_ctx.json"
-ctx_raw=0
-[ -f "$ctx_file" ] && ctx_raw=$(jq -r '.total_genuine_tokens_saved // 0' "$ctx_file" 2>/dev/null || echo "0")
+genuine_dir="$HOME/.code-index"
+
+jcm_raw=0; jdm_raw=0; ctx_raw=0
+jcm_today=0; jdm_today=0; ctx_today=0
+today=$(date -u +%Y-%m-%d)
+
+# JCM + JDM totals and today from history (split by tool prefix)
+if [ -f "$history_file" ]; then
+  jcm_raw=$(jq -s '[.[] | select(.tool | startswith("mcp__jcodemunch__")) | .tokens_saved] | add // 0' "$history_file" 2>/dev/null || echo "0")
+  jdm_raw=$(jq -s '[.[] | select(.tool | startswith("mcp__jdocmunch__")) | .tokens_saved] | add // 0' "$history_file" 2>/dev/null || echo "0")
+  jcm_today=$(jq -s --arg d "$today" '[.[] | select(.ts[:10] == $d) | select(.tool | startswith("mcp__jcodemunch__")) | .tokens_saved] | add // 0' "$history_file" 2>/dev/null || echo "0")
+  jdm_today=$(jq -s --arg d "$today" '[.[] | select(.ts[:10] == $d) | select(.tool | startswith("mcp__jdocmunch__")) | .tokens_saved] | add // 0' "$history_file" 2>/dev/null || echo "0")
+fi
+
+# JDM fallback: jDocMunch reports tokens_saved=0 for most ops (search returns summaries),
+# so history may have no JDM entries. Fall back to jDocMunch's built-in tracker.
+if [ "$jdm_raw" -eq 0 ] 2>/dev/null; then
+  jdm_builtin="$HOME/.doc-index/_savings.json"
+  [ -f "$jdm_builtin" ] && jdm_raw=$(jq -r '.total_tokens_saved // 0' "$jdm_builtin" 2>/dev/null || echo "0")
+fi
+
+# CTX total: use the higher of history sum vs JSON accumulator
+# (history may start later than JSON, so JSON can have older savings not in history)
+ctx_hist_total=0; ctx_json_total=0
+if [ -f "$ctx_history_file" ]; then
+  ctx_hist_total=$(jq -s '[.[].tokens_saved] | add // 0' "$ctx_history_file" 2>/dev/null || echo "0")
+  ctx_today=$(jq -s --arg d "$today" '[.[] | select(.ts[:10] == $d) | .tokens_saved] | add // 0' "$ctx_history_file" 2>/dev/null || echo "0")
+fi
+if [ -f "$ctx_file" ]; then
+  ctx_json_total=$(jq -r '.total_genuine_tokens_saved // 0' "$ctx_file" 2>/dev/null || echo "0")
+fi
+# Use whichever is higher (JSON has pre-history savings, history has daily breakdown)
+if [ "$ctx_json_total" -gt "$ctx_hist_total" ] 2>/dev/null; then
+  ctx_raw=$ctx_json_total
+else
+  ctx_raw=$ctx_hist_total
+fi
 
 jmunch_suffix=""
 if [ "$jcm_raw" -gt 0 ] 2>/dev/null || [ "$jdm_raw" -gt 0 ] 2>/dev/null || [ "$ctx_raw" -gt 0 ] 2>/dev/null; then
@@ -77,17 +88,30 @@ if [ "$jcm_raw" -gt 0 ] 2>/dev/null || [ "$jdm_raw" -gt 0 ] 2>/dev/null || [ "$c
   C=$'\033[36m'
   Y=$'\033[33m'
   X=$'\033[0m'
-  today_part=""
+  # JCM today
+  jcm_today_part=""
   if [ "$jcm_today" -gt 0 ] 2>/dev/null; then
     jcm_td=$(format_tokens "$jcm_today")
-    today_part=" ${D}(${X}${Y}today:${jcm_td}${X}${D})${X}"
+    jcm_today_part=" ${D}(${X}${Y}today:${jcm_td}${X}${D})${X}"
   fi
+  # JDM today
+  jdm_today_part=""
+  if [ "$jdm_today" -gt 0 ] 2>/dev/null; then
+    jdm_td=$(format_tokens "$jdm_today")
+    jdm_today_part=" ${D}(${X}${Y}today:${jdm_td}${X}${D})${X}"
+  fi
+  # CTX with today
   ctx_part=""
   if [ "$ctx_raw" -gt 0 ] 2>/dev/null; then
     ctx=$(format_tokens "$ctx_raw")
-    ctx_part=" CTX:${ctx}"
+    ctx_today_part=""
+    if [ "$ctx_today" -gt 0 ] 2>/dev/null; then
+      ctx_td=$(format_tokens "$ctx_today")
+      ctx_today_part=" ${D}(${X}${Y}today:${ctx_td}${X}${D})${X}"
+    fi
+    ctx_part=" CTX:${ctx}${ctx_today_part}"
   fi
-  jmunch_suffix=" ${D}|${X} ${C}JCM:${jcm}${today_part} JDM:${jdm}${ctx_part}${X}"
+  jmunch_suffix=" ${D}|${X} ${C}JCM:${jcm}${jcm_today_part} JDM:${jdm}${jdm_today_part}${ctx_part}${X}"
 fi
 
 # Append jmunch savings to the last line (L4: Model/time line)

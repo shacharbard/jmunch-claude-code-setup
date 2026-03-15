@@ -85,20 +85,21 @@ if [ "$jcm_raw" -gt 0 ] 2>/dev/null || [ "$jdm_raw" -gt 0 ] 2>/dev/null || [ "$c
   jcm=$(format_tokens "$jcm_raw")
   jdm=$(format_tokens "$jdm_raw")
   D=$'\033[2m'
-  C=$'\033[36m'
-  Y=$'\033[33m'
+  B=$'\033[1m'
+  L=$'\033[38;5;183m'  # lilac (light purple)
+  BG=$'\033[92m'       # bright green
   X=$'\033[0m'
   # JCM today
   jcm_today_part=""
   if [ "$jcm_today" -gt 0 ] 2>/dev/null; then
     jcm_td=$(format_tokens "$jcm_today")
-    jcm_today_part=" ${D}(${X}${Y}today:${jcm_td}${X}${D})${X}"
+    jcm_today_part=" ${D}(${X}${BG}today:${jcm_td}${X}${D})${X}"
   fi
   # JDM today
   jdm_today_part=""
   if [ "$jdm_today" -gt 0 ] 2>/dev/null; then
     jdm_td=$(format_tokens "$jdm_today")
-    jdm_today_part=" ${D}(${X}${Y}today:${jdm_td}${X}${D})${X}"
+    jdm_today_part=" ${D}(${X}${BG}today:${jdm_td}${X}${D})${X}"
   fi
   # CTX with today
   ctx_part=""
@@ -107,11 +108,11 @@ if [ "$jcm_raw" -gt 0 ] 2>/dev/null || [ "$jdm_raw" -gt 0 ] 2>/dev/null || [ "$c
     ctx_today_part=""
     if [ "$ctx_today" -gt 0 ] 2>/dev/null; then
       ctx_td=$(format_tokens "$ctx_today")
-      ctx_today_part=" ${D}(${X}${Y}today:${ctx_td}${X}${D})${X}"
+      ctx_today_part=" ${D}(${X}${BG}today:${ctx_td}${X}${D})${X}"
     fi
-    ctx_part=" CTX:${ctx}${ctx_today_part}"
+    ctx_part=" ${B}${L}CTX:${X}${L}${ctx}${X}${ctx_today_part}"
   fi
-  jmunch_suffix=" ${D}|${X} ${C}JCM:${jcm}${jcm_today_part} JDM:${jdm}${jdm_today_part}${ctx_part}${X}"
+  jmunch_suffix=" ${D}|${X} ${B}${L}JCM:${X}${L}${jcm}${X}${jcm_today_part} ${B}${L}JDM:${X}${L}${jdm}${X}${jdm_today_part}${ctx_part}"
 fi
 
 # Rearrange VBW output for cleaner layout:

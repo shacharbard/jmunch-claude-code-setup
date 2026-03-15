@@ -24,6 +24,13 @@ fi
 # Run VBW statusline, capture output
 output=$(echo "$input" | bash "$VBW_SL" 2>/dev/null)
 
+# Auto-clear stale "fetch failed" cache so limits retry immediately after re-login.
+# VBW caches failures for 60s, but if the OAuth token rotated, retrying sooner helps.
+if echo "$output" | LC_ALL=C grep -q "fetch failed"; then
+  _UID=$(id -u)
+  rm -f /tmp/vbw-*-"${_UID}"-*-slow 2>/dev/null
+fi
+
 # Compute jCodeMunch + jDocMunch savings
 format_tokens() {
   local n="$1"

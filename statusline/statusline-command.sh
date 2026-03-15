@@ -114,9 +114,59 @@ if [ "$jcm_raw" -gt 0 ] 2>/dev/null || [ "$jdm_raw" -gt 0 ] 2>/dev/null || [ "$c
   jmunch_suffix=" ${D}|${X} ${C}JCM:${jcm}${jcm_today_part} JDM:${jdm}${jdm_today_part}${ctx_part}${X}"
 fi
 
-# Append jmunch savings to the last line (L4: Model/time line)
-if [ -n "$jmunch_suffix" ]; then
-  total_lines=$(echo "$output" | wc -l | tr -d ' ')
+# Rearrange VBW output for cleaner layout:
+#   VBW L1: [VBW] Phase │ Plans │ ...           → keep as-is
+#   VBW L2: Context: ██ X% │ Tokens │ Cache     → append "│ VBW X.X │ CC X.X"
+#   VBW L3: Session: ██ X% │ Weekly │ ...       → append "│ Model: ... │ Time: ..."
+#   VBW L4: Model: ... │ Time │ VBW │ CC        → replace with JCM/JDM/CTX savings
+#
+# This avoids cramming everything onto L4.
+
+total_lines=$(echo "$output" | wc -l | tr -d ' ')
+
+if [ "$total_lines" -ge 4 ] && [ -n "$jmunch_suffix" ]; then
+  D=$'\033[2m'
+  X=$'\033[0m'
+
+  L1=$(echo "$output" | sed -n '1p')
+  L2=$(echo "$output" | sed -n '2p')
+  L3=$(echo "$output" | sed -n '3p')
+  L4=$(echo "$output" | sed -n '4p')
+
+  # Extract "VBW X.X.X │ CC X.X.X" from L4 (dim text at end)
+  # Pattern: "│ VBW ..." to end of line (after stripping ANSI for matching)
+  vbw_cc=$(echo "$L4" | LC_ALL=C sed 's/\x1b\[[0-9;]*m//g' | grep -oE 'VBW [0-9]+\.[0-9]+\.[0-9]+ .* CC [^ ]+' | head -1)
+  if [ -z "$vbw_cc" ]; then
+    # Fallback: just grab everything after "Time: ..."
+    vbw_cc=$(echo "$L4" | LC_ALL=C sed 's/\x1b\[[0-9;]*m//g' | grep -oE 'VBW [^ ]+' | head -1)
+    cc_ver=$(echo "$L4" | LC_ALL=C sed 's/\x1b\[[0-9;]*m//g' | grep -oE 'CC [^ ]+' | head -1)
+    [ -n "$cc_ver" ] && vbw_cc="$vbw_cc ${D}│${X} $cc_ver"
+  fi
+
+  # Extract "Model: ... │ Time: ..." from L4
+  model_time=$(echo "$L4" | LC_ALL=C sed 's/\x1b\[[0-9;]*m//g' | grep -oE 'Model: .+ \(API: [^)]+\)' | head -1)
+
+  # Append VBW/CC to L2 (context line)
+  if [ -n "$vbw_cc" ]; then
+    L2="${L2} ${D}│${X} ${D}${vbw_cc}${X}"
+  fi
+
+  # Append Model/Time to L3 (session/usage line)
+  if [ -n "$model_time" ]; then
+    if [ -n "$L3" ]; then
+      L3="${L3} ${D}│${X} ${D}${model_time}${X}"
+    else
+      L3="${D}${model_time}${X}"
+    fi
+  fi
+
+  # L4 becomes just the savings line
+  printf '%b\n' "$L1"
+  printf '%b\n' "$L2"
+  [ -n "$L3" ] && printf '%b\n' "$L3"
+  printf '%b\n' "${jmunch_suffix# }"
+elif [ -n "$jmunch_suffix" ]; then
+  # Fewer than 4 lines — just append to last line (fallback)
   echo "$output" | head -n $((total_lines - 1))
   last_line=$(echo "$output" | tail -1)
   printf '%b\n' "${last_line}${jmunch_suffix}"

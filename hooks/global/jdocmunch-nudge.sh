@@ -38,6 +38,6 @@ if [[ "$FILE_PATH" == *.md || "$FILE_PATH" == *.mdx || "$FILE_PATH" == *.rst ]];
   fi
 
   # Block with instruction to use jDocMunch
-  echo "BLOCKED: Use jDocMunch instead of Read for '$BASENAME' (${LINE_COUNT:-unknown} lines). Use mcp__jdocmunch__search_sections to find relevant sections, mcp__jdocmunch__get_section for specific content by ID. Read is only allowed for small docs (<50 lines), CLAUDE.md, or planning files."
+  echo "BLOCKED: Use jDocMunch instead of Read for '$BASENAME' (${LINE_COUNT:-unknown} lines). Use mcp__jdocmunch__search_sections to find relevant sections, mcp__jdocmunch__get_section for specific content by ID. Read is only allowed for small docs (<50 lines), CLAUDE.md, or planning files." >&2
   exit 2
 fi

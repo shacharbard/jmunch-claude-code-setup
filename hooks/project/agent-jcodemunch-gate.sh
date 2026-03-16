@@ -46,7 +46,7 @@ case "$SUBAGENT_TYPE" in
     if echo "$PROMPT" | grep -qi "jdocmunch\|mcp__jdocmunch\|search_sections\|get_section"; then
       exit 0
     fi
-    cat <<'BLOCK_MSG'
+    cat <<'BLOCK_MSG' >&2
 BLOCKED: Agent prompt must include jDocMunch instructions. Copy these VERBATIM into your agent prompt:
 
 **Doc navigation (MANDATORY):** Use jDocMunch MCP tools for documentation files.
@@ -73,6 +73,7 @@ BLOCK_MSG
     [ "$HAS_CODE" = "yes" ] && [ "$HAS_DOCS" = "no" ] && BLOCK_HEADER="$BLOCK_HEADER jDocMunch"
     BLOCK_HEADER="$BLOCK_HEADER instructions. Copy the missing block(s) VERBATIM into your agent prompt:"
 
+    {
     echo "$BLOCK_HEADER"
     echo ""
 
@@ -94,6 +95,7 @@ CODE_INSTRUCTIONS
 - Fall back to Read ONLY for small docs (<50 lines) or planning files
 DOC_INSTRUCTIONS
     fi
+    } >&2
 
     exit 2
     ;;

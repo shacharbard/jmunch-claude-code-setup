@@ -42,10 +42,16 @@ case "$TOOL" in
   ToolSearch) exit 0 ;;
 esac
 
+# Always allow: context-mode tools (they have their own session gate;
+# blocking them here creates a deadlock when context-mode needs ctx_stats to init)
+case "$TOOL" in
+  mcp__context-mode__*) exit 0 ;;
+esac
+
 # Block everything else
 echo "BLOCKED: jCodeMunch/jDocMunch indexes not yet refreshed this session.
 You MUST run BOTH of these IMMEDIATELY before doing any other work:
   1. mcp__jcodemunch__index_folder(path='.', incremental=true, use_ai_summaries=false)
   2. mcp__jdocmunch__index_local(path='.', use_ai_summaries=false)
-Do NOT respond to the user first. Run the indexes NOW. All tools are blocked until this is done."
+Do NOT respond to the user first. Run the indexes NOW. All tools are blocked until this is done." >&2
 exit 2

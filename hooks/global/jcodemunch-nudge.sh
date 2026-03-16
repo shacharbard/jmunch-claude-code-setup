@@ -37,6 +37,6 @@ if [[ "$FILE_PATH" == *.py || "$FILE_PATH" == *.ts || "$FILE_PATH" == *.tsx ]]; 
   - Understand a function: mcp__jcodemunch__get_symbol
   - Find by name: mcp__jcodemunch__search_symbols (skip outline)
   - Edit a function: get_symbol (find line range) -> get_file_content(start_line=line-4, end_line=end_line+3) -> Edit
-  - Full Read ONLY when: editing 6+ functions in same file, need imports/globals, or file <50 lines"
+  - Full Read ONLY when: editing 6+ functions in same file, need imports/globals, or file <50 lines" >&2
   exit 2
 fi

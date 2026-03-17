@@ -3,6 +3,23 @@
 All notable changes to this project are documented here.
 Updated automatically on each release.
 
+## v1.0.1
+
+- fix(release): find repo correctly when run from Desktop
+- fix(changelog): remove hardcoded version header
+- docs(changelog): rename version to v1.0.1
+- docs(claude): add CHANGELOG rule and track CLAUDE.md in repo
+- docs(changelog): add human-readable explanations to all entries
+- docs(changelog): add detailed v1.1.0 entry with subagent fix explanation
+- fix(hooks): allow agent communication tools through session gate
+- docs(readme): add context-mode as opt-in feature with full documentation
+- feat(hooks): merge context-mode bridge hooks with opt-in flag
+- fix(hooks): skip jcodemunch-nudge in projects without jcodemunch
+- feat(release): auto-generate CHANGELOG.md on each release
+- docs(release): add welcome banner explaining what the script does
+- feat(release): auto-create GitHub Release with changelog
+
+
 ### Subagent fix: communication tools no longer blocked
 
 The session gate (`PreToolUse:*`) was blocking ALL tools until indexes were refreshed — including `SendMessage` and `TaskUpdate`. This trapped subagents: they'd finish their work but couldn't return results to the parent agent.

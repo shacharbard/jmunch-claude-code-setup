@@ -6,8 +6,10 @@
 #   2. Verifies all file checksums
 #   3. Shows what changed since last tag
 #   4. Asks for a version tag (e.g., v1.0.0)
-#   5. Commits checksums, tags the release, pushes main
-#   6. Fast-forwards 'stable' branch to the tagged commit and pushes
+#   5. Updates CHANGELOG.md with the new version's commits
+#   6. Commits checksums + changelog, tags the release, pushes main
+#   7. Fast-forwards 'stable' branch to the tagged commit and pushes
+#   8. Creates a GitHub Release with changelog
 #
 # Branch model:
 #   main   — your working branch (every commit)
@@ -26,7 +28,8 @@ echo "  This script will:"
 echo "    1. Regenerate and verify checksums"
 echo "    2. Show you what changed since the last release"
 echo "    3. Ask you for a version number (e.g., v1.1.0)"
-echo "    4. Tag, push main, update stable, create GitHub Release"
+echo "    4. Update CHANGELOG.md, tag, push main, update stable"
+echo "    5. Create GitHub Release with changelog"
 echo ""
 echo "  You only need to type the version number."
 echo "  Everything else is automatic."
@@ -103,14 +106,40 @@ if ! echo "$VERSION" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
   fi
 fi
 
-# --- Step 5: Commit, tag, push ---
+# --- Step 5: Update CHANGELOG.md ---
 echo ""
-echo "→ Committing checksums..."
-git add CHECKSUMS.sha256
-if git diff --cached --quiet; then
-  echo "  ○ No checksum changes to commit"
+echo "→ Updating CHANGELOG.md..."
+CHANGELOG="CHANGELOG.md"
+if [ -f "$CHANGELOG" ]; then
+  # Build the new entry
+  ENTRY="## $VERSION"$'\n\n'
+  if [ -n "$LAST_TAG" ]; then
+    ENTRY+=$(git log --oneline "$LAST_TAG"..HEAD --format="- %s" | grep -v "^- release:")
+  else
+    ENTRY+=$(git log --oneline -20 --format="- %s" | grep -v "^- release:")
+  fi
+  ENTRY+=$'\n'
+
+  # Insert after the header (line 4 = after "Updated automatically..." + blank line)
+  {
+    head -4 "$CHANGELOG"
+    echo ""
+    echo "$ENTRY"
+    tail -n +5 "$CHANGELOG"
+  } > "${CHANGELOG}.tmp" && mv "${CHANGELOG}.tmp" "$CHANGELOG"
+  echo "  ✓ CHANGELOG.md updated"
 else
-  git commit -m "release: update checksums for $VERSION"
+  echo "  ⚠ CHANGELOG.md not found — skipping"
+fi
+
+# --- Step 6: Commit, tag, push ---
+echo ""
+echo "→ Committing release files..."
+git add CHECKSUMS.sha256 CHANGELOG.md
+if git diff --cached --quiet; then
+  echo "  ○ No changes to commit"
+else
+  git commit -m "release($VERSION): update checksums and changelog"
   echo "  ✓ Committed"
 fi
 
@@ -122,7 +151,7 @@ echo "→ Pushing main..."
 git push && git push --tags
 echo "  ✓ Pushed main + tags"
 
-# --- Step 6: Fast-forward stable branch ---
+# --- Step 7: Fast-forward stable branch ---
 echo ""
 echo "→ Updating stable branch..."
 CURRENT_BRANCH=$(git branch --show-current)
@@ -139,7 +168,7 @@ fi
 # Return to original branch
 git checkout "$CURRENT_BRANCH" --quiet 2>/dev/null
 
-# --- Step 7: Create GitHub Release ---
+# --- Step 8: Create GitHub Release ---
 echo ""
 echo "→ Creating GitHub Release..."
 if command -v gh >/dev/null 2>&1; then

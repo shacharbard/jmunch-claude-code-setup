@@ -22,6 +22,8 @@ This repo provides the full enforcement stack that makes Claude **actually use**
 
 ## Quick Start
 
+### One-time setup (installs hooks globally)
+
 ```bash
 # 1. Install the MCP servers
 uv tool install jcodemunch-mcp
@@ -34,21 +36,29 @@ cd ~/Development/AI/jmunch-claude-code-setup
 # 3. Switch to the stable branch (recommended for production use)
 git checkout stable
 
-# 4. Run the sync script — symlinks all hooks, no copying needed
+# 4. Run the sync script — symlinks all hooks globally, no copying needed
 bash scripts/sync-hooks.sh --verify
 
-# 5. Add MCP config to your project
-cp rules/mcp-example.json /path/to/your/project/.mcp.json
-
-# 6. Add settings (merge with your existing .claude/settings.json)
-# See rules/project-settings-example.json
-
-# 7. Add CLAUDE.md rules (append to ~/.claude/CLAUDE.md)
+# 5. Add CLAUDE.md rules (append to ~/.claude/CLAUDE.md)
 # See rules/global-claude-md.md
-
-# 8. Allow MCP tools (add to .claude/settings.local.json)
-# See rules/allowed-tools.txt
 ```
+
+### Per-project setup (one command)
+
+For each project where you want jCodeMunch/jDocMunch enforcement:
+
+```bash
+cd /path/to/your/project
+bash ~/Development/AI/jmunch-claude-code-setup/scripts/init-project.sh
+```
+
+This creates everything the project needs:
+- `.claude/hooks/` — symlinks to the global hooks (always up to date)
+- `.claude/settings.json` — hook registrations (session gate, nudges, agent gate, savings tracking)
+- `.claude/settings.local.json` — MCP tool permissions (no approval prompts)
+- `.mcp.json` — MCP server config (jcodemunch + jdocmunch)
+
+Safe to re-run — skips existing files, backs up before overwriting.
 
 See [docs/setup-guide.md](docs/setup-guide.md) for the full step-by-step walkthrough.
 
@@ -124,6 +134,7 @@ hooks/
     reindex-after-commit.sh        # PostToolUse:Bash — re-index after git commits
     track-genuine-savings.sh       # PostToolUse — tracks genuine token savings
 scripts/
+  init-project.sh                  # Set up jmunch enforcement in a new project (one command)
   sync-hooks.sh                    # Symlink all hooks to ~/.claude/hooks/ (with --verify)
   release.command                  # Double-click to tag + release to stable branch
   update-mcp-servers.command       # Double-click to update MCP server packages

@@ -40,24 +40,28 @@ All nudge hooks now check if their MCP server is configured in the project's `.m
 
 ### Other changes
 
-- feat(release): auto-generate CHANGELOG.md and GitHub Release on each release
-- docs(readme): add context-mode as opt-in feature with decision table
-- docs(release): add welcome banner to release.command
+- **Auto-generate CHANGELOG.md on release** — `release.command` now prepends the new version's changes to CHANGELOG.md automatically
+- **GitHub Release created automatically** — `release.command` uses `gh release create` with changelog, no manual step
+- **Release script welcome banner** — shows what the script will do before starting, so you know what to expect
+- **README updated** — context-mode documented as opt-in feature with a "do I need it?" decision table, updated coverage table, session lifecycle diagram, and subagent instructions
 
 ## v1.0.0
 
 First stable release.
 
-- feat(install): add one-liner installer for zero-friction setup
-- feat(scripts): add init-project.sh for one-command project setup
-- fix(hooks): only print version status after a real remote check
-- feat(hooks): show version status on every session start
-- docs(readme): add security section with trust model and verification guide
-- feat: add stable branch model and .gitignore
-- feat(security): add remote verification, checksums, and update logging
-- feat(hooks): add sync-hooks.sh and auto-update for zero-maintenance distribution
-- fix(hooks): write block messages to stderr so model can see them
-- fix(statusline): auto-clear VBW slow cache on fetch failure
-- style(statusline): bold lilac for JCM/JDM/CTX labels, bright green for today
-- refactor(statusline): rearrange lines for cleaner layout
-- feat(hooks): add JDM savings estimation and JSONL history logging
+- **One-liner installer** — `curl | bash` sets up everything globally, clones to `~/.jmunch-hooks`
+- **Per-project init script** — `init-project.sh` creates symlinks, MCP config, tool permissions, and hook registrations in one command
+- **Version status on session start** — prints branch, commit hash, and tag after verifying against the remote (silent when throttled)
+- **Security: remote URL verification** — auto-update and sync both verify the git remote matches the expected repo before pulling
+- **Security: SHA256 checksums** — `CHECKSUMS.sha256` published with every release, verifiable via `sync-hooks.sh --verify`
+- **Security: update logging** — every auto-update logs old/new commit hash and changed files to `~/.claude/jmunch-update.log`
+- **Stable branch model** — users track `stable` (updated on release only), repo owner works on `main`
+- **.gitignore** — prevents `.vbw-planning/`, `CLAUDE.md`, `.mcp.json` from accidentally being committed
+- **Symlink-based distribution** — `sync-hooks.sh` creates symlinks to the repo, not copies. `git pull` = instant update everywhere
+- **stderr fix** — all 4 PreToolUse hooks now write block messages to stderr (Claude Code only shows stderr to the model on exit 2). Previously wrote to stdout, causing "No stderr output" errors
+- **context-mode exception in session gate** — `mcp__context-mode__*` tools now pass through the session gate, preventing a deadlock when context-mode initializes
+- **Statusline styling** — bold lilac for JCM/JDM/CTX labels, bright green for today's savings
+- **Statusline layout** — rearranged lines for cleaner display (model/time on L3, savings on L4)
+- **VBW statusline cache fix** — auto-clears stale slow cache on fetch failure so limits retry immediately after re-login
+- **jDocMunch savings estimation** — `track-genuine-savings.sh` now estimates savings for jDocMunch tools that report `tokens_saved=0`, using conservative baselines
+- **JSONL history logging** — per-event savings log at `~/.code-index/_genuine_savings_history.jsonl` for daily breakdowns in statusline

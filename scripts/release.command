@@ -128,14 +128,40 @@ fi
 # Return to original branch
 git checkout "$CURRENT_BRANCH" --quiet 2>/dev/null
 
+# --- Step 7: Create GitHub Release ---
+echo ""
+echo "→ Creating GitHub Release..."
+if command -v gh >/dev/null 2>&1; then
+  # Build release notes from commits since last tag
+  RELEASE_NOTES="## Changes"$'\n'
+  if [ -n "$LAST_TAG" ]; then
+    RELEASE_NOTES+=$'\n'
+    RELEASE_NOTES+=$(git log --oneline "$LAST_TAG".."$VERSION" | sed 's/^/- /')
+    RELEASE_NOTES+=$'\n'
+  fi
+  RELEASE_NOTES+=$'\n'"## Install"$'\n\n'
+  RELEASE_NOTES+='```bash'$'\n'
+  RELEASE_NOTES+='curl -sSL https://raw.githubusercontent.com/shacharbard/jmunch-claude-code-setup/stable/install.sh | bash'$'\n'
+  RELEASE_NOTES+='```'
+
+  if gh release create "$VERSION" --title "$VERSION" --notes "$RELEASE_NOTES" 2>/dev/null; then
+    echo "  ✓ GitHub Release created"
+  else
+    echo "  ⚠ GitHub Release failed (tag may already have a release)"
+  fi
+else
+  echo "  ⚠ gh CLI not found — create the release manually on GitHub"
+fi
+
 echo ""
 echo "================================="
 echo "  ✓ Released $VERSION"
 echo "================================="
 echo ""
-echo "  main:   pushed (all commits)"
-echo "  stable: fast-forwarded to $VERSION"
-echo "  tags:   $VERSION pushed"
+echo "  main:     pushed (all commits)"
+echo "  stable:   fast-forwarded to $VERSION"
+echo "  tag:      $VERSION pushed"
+echo "  release:  GitHub Release created"
 echo ""
 echo "  Users on 'stable' will auto-update on next session start."
 echo "  They can verify with: sync-hooks.sh --verify"

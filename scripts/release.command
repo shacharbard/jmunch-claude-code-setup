@@ -16,7 +16,26 @@
 #   stable — what users track (only updated on release)
 
 set -euo pipefail
-cd "$(dirname "$0")/.."
+
+# Find the repo — check if this script is a symlink or a Desktop copy
+SCRIPT_PATH="$(readlink "$0" 2>/dev/null || echo "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+
+# If we're in scripts/, go up one level. Otherwise look for the repo.
+if [ -d "$SCRIPT_DIR/../hooks" ]; then
+  cd "$SCRIPT_DIR/.."
+elif [ -d "$HOME/.jmunch-hooks/hooks" ]; then
+  cd "$HOME/.jmunch-hooks"
+elif [ -d "$HOME/Development/AI/jmunch-claude-code-setup/hooks" ]; then
+  cd "$HOME/Development/AI/jmunch-claude-code-setup"
+else
+  echo "  ✗ Cannot find jmunch-claude-code-setup repo."
+  echo "    Expected at: ~/.jmunch-hooks or ~/Development/AI/jmunch-claude-code-setup"
+  echo ""
+  echo "Press any key to close..."
+  read -n 1
+  exit 1
+fi
 REPO_ROOT="$(pwd)"
 
 echo "================================="

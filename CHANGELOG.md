@@ -3,7 +3,7 @@
 All notable changes to this project are documented here.
 Updated automatically on each release.
 
-## v1.1.0
+## v1.0.1
 
 ### Subagent fix: communication tools no longer blocked
 
@@ -11,7 +11,7 @@ The session gate (`PreToolUse:*`) was blocking ALL tools until indexes were refr
 
 **Before (v1.0.0):** Subagent finishes → tries SendMessage → BLOCKED → sees "run indexes" → re-indexes → tries again → might get blocked again if another agent committed → appears stuck.
 
-**After (v1.1.0):** Agent communication and lifecycle tools always pass through the gate:
+**After (v1.0.1):** Agent communication and lifecycle tools always pass through the gate:
 
 | Tool | Why it's allowed |
 |------|-----------------|

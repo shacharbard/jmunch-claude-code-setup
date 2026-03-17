@@ -1,4 +1,4 @@
-fe1e1e29b611fc14059c328de7bf474839d5774bdb926235b25548e0b2230e99  hooks/global/auto-update-hooks.sh
+f13d85a2efcc121fe10bc170a0a4edee4b0cc2b6fd65262e5e17ac4f30f96fa0  hooks/global/auto-update-hooks.sh
 3f0cc6050f768c0d4cf1aacdd8ef6e6b428a2fb0ff5cd6a871df81c35764c599  hooks/global/jcodemunch-nudge.sh
 a3b49bd070d723389523ce5ed44f20fdecbebc281fed9a43de5b8a2c03a9469b  hooks/global/jdocmunch-nudge.sh
 1e612e831f7e72033a7979ba468ed6206155ecaac3aa455885e16a3138162a5a  hooks/global/reindex-after-edit.sh

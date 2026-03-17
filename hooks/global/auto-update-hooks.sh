@@ -15,7 +15,13 @@
 # --- Config ---
 # Users: set JMUNCH_REPO_DIR to override the default repo location
 # Users: set JMUNCH_BRANCH to track a different branch (default: stable)
-REPO_DIR="${JMUNCH_REPO_DIR:-$HOME/Development/AI/jmunch-claude-code-setup}"
+# Check ~/.jmunch-hooks first (installer default), then legacy path
+if [ -d "$HOME/.jmunch-hooks/.git" ]; then
+  _DEFAULT_REPO="$HOME/.jmunch-hooks"
+else
+  _DEFAULT_REPO="$HOME/Development/AI/jmunch-claude-code-setup"
+fi
+REPO_DIR="${JMUNCH_REPO_DIR:-$_DEFAULT_REPO}"
 BRANCH="${JMUNCH_BRANCH:-stable}"
 EXPECTED_REMOTE="shacharbard/jmunch-claude-code-setup"
 STAMP="/tmp/jmunch-auto-update-$(id -u)"

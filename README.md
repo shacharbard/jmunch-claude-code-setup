@@ -22,34 +22,32 @@ This repo provides the full enforcement stack that makes Claude **actually use**
 
 ## Quick Start
 
-### One-time setup (installs hooks globally)
+### Install (one command)
 
 ```bash
-# 1. Install the MCP servers
+# Install the MCP servers first
 uv tool install jcodemunch-mcp
 uv tool install jdocmunch-mcp
 
-# 2. Clone this repo
-git clone https://github.com/shacharbard/jmunch-claude-code-setup.git ~/Development/AI/jmunch-claude-code-setup
-cd ~/Development/AI/jmunch-claude-code-setup
-
-# 3. Switch to the stable branch (recommended for production use)
-git checkout stable
-
-# 4. Run the sync script — symlinks all hooks globally, no copying needed
-bash scripts/sync-hooks.sh --verify
-
-# 5. Add CLAUDE.md rules (append to ~/.claude/CLAUDE.md)
-# See rules/global-claude-md.md
+# Then install the hooks
+curl -sSL https://raw.githubusercontent.com/shacharbard/jmunch-claude-code-setup/stable/install.sh | bash
 ```
 
-### Per-project setup (one command)
+This clones the repo to `~/.jmunch-hooks`, symlinks all hooks globally, verifies checksums, and registers auto-updates. No manual configuration needed.
+
+### Set up a project
 
 For each project where you want jCodeMunch/jDocMunch enforcement:
 
 ```bash
 cd /path/to/your/project
-bash ~/Development/AI/jmunch-claude-code-setup/scripts/init-project.sh
+bash ~/.jmunch-hooks/scripts/init-project.sh
+```
+
+Or do both in one step:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/shacharbard/jmunch-claude-code-setup/stable/install.sh | bash -s -- --project /path/to/your/project
 ```
 
 This creates everything the project needs:
@@ -59,6 +57,10 @@ This creates everything the project needs:
 - `.mcp.json` — MCP server config (jcodemunch + jdocmunch)
 
 Safe to re-run — skips existing files, backs up before overwriting.
+
+### Add CLAUDE.md rules
+
+Append the rules to your global `~/.claude/CLAUDE.md` — see [rules/global-claude-md.md](rules/global-claude-md.md).
 
 See [docs/setup-guide.md](docs/setup-guide.md) for the full step-by-step walkthrough.
 

@@ -27,32 +27,92 @@ This repo provides the full enforcement stack that makes Claude **actually use**
 uv tool install jcodemunch-mcp
 uv tool install jdocmunch-mcp
 
-# 2. Add MCP config to your project
-cp rules/mcp-example.json .mcp.json
+# 2. Clone this repo
+git clone https://github.com/shacharbard/jmunch-claude-code-setup.git ~/Development/AI/jmunch-claude-code-setup
+cd ~/Development/AI/jmunch-claude-code-setup
 
-# 3. Copy hooks to your project
-mkdir -p .claude/hooks
-cp hooks/project/*.sh .claude/hooks/
-cp hooks/global/*.sh .claude/hooks/
-chmod +x .claude/hooks/*.sh
+# 3. Switch to the stable branch (recommended for production use)
+git checkout stable
 
-# 4. Add settings (merge with your existing .claude/settings.json)
+# 4. Run the sync script — symlinks all hooks, no copying needed
+bash scripts/sync-hooks.sh --verify
+
+# 5. Add MCP config to your project
+cp rules/mcp-example.json /path/to/your/project/.mcp.json
+
+# 6. Add settings (merge with your existing .claude/settings.json)
 # See rules/project-settings-example.json
 
-# 5. Add CLAUDE.md rules (append to ~/.claude/CLAUDE.md)
+# 7. Add CLAUDE.md rules (append to ~/.claude/CLAUDE.md)
 # See rules/global-claude-md.md
 
-# 6. Allow MCP tools (add to .claude/settings.local.json)
+# 8. Allow MCP tools (add to .claude/settings.local.json)
 # See rules/allowed-tools.txt
 ```
 
 See [docs/setup-guide.md](docs/setup-guide.md) for the full step-by-step walkthrough.
+
+## Security
+
+These hooks run as shell scripts with your user permissions every time Claude Code starts a session or calls a tool. We take that seriously. Here's what we do to keep you safe:
+
+| Measure | What it does | Why it matters |
+|---------|-------------|----------------|
+| **Stable branch** | Users track the `stable` branch, which is only updated on explicit releases | You never get untested work-in-progress code. Only reviewed, tagged releases reach `stable`. |
+| **Fast-forward only** | Auto-updates use `git pull --ff-only` | Rejects force-pushes and history rewrites. An attacker cannot rewrite past commits to inject malicious code. |
+| **Remote URL verification** | Both `sync-hooks.sh` and `auto-update-hooks.sh` verify the git remote matches `shacharbard/jmunch-claude-code-setup` | Prevents a hijacked or swapped remote from serving malicious code. If the remote doesn't match, the update is blocked and logged. |
+| **SHA256 checksums** | Every release includes `CHECKSUMS.sha256` with hashes of all distributed scripts | Run `sync-hooks.sh --verify` at any time to confirm no file has been tampered with since the release. |
+| **Update logging** | Every auto-update logs the old/new commit hash and changed files to `~/.claude/jmunch-update.log` | Full audit trail. You can see exactly what changed and when. |
+| **Tagged releases** | Releases are tagged with semantic versions (e.g., `v1.0.0`) | You can pin to a specific version and upgrade on your own schedule. |
+| **Plain bash scripts** | All hooks are standard bash — no compiled binaries, no obfuscated code, no network calls (except `git pull`) | You can read every line of code that runs on your machine. Nothing is hidden. |
+| **No secrets or data collection** | Hooks only process Claude Code tool metadata (tool names, file paths). No data leaves your machine. | Savings tracking writes to local JSON files only. Nothing is phoned home. |
+| **Symlinks, not copies** | `sync-hooks.sh` creates symlinks to the repo, not copies | You always know exactly which code is running — it's the files in the repo. No hidden divergence between "installed" and "source" versions. |
+| **Configurable repo path** | Set `JMUNCH_REPO_DIR` env var to override the default repo location | Works with any clone location. The auto-updater doesn't assume where you put the repo. |
+| **Configurable branch** | Set `JMUNCH_BRANCH` env var to track a different branch | Advanced users can track `main` for bleeding-edge, or pin to a specific tag for maximum stability. |
+
+### Verifying integrity
+
+After installation or at any time:
+
+```bash
+bash ~/Development/AI/jmunch-claude-code-setup/scripts/sync-hooks.sh --verify
+```
+
+This checks every file against the published SHA256 checksums. If any file has been modified — whether by an attacker, a bad merge, or an accidental edit — you'll see:
+
+```
+  ✓ hooks/global/jcodemunch-nudge.sh
+  ✓ hooks/global/jdocmunch-nudge.sh
+  ✗ hooks/project/jmunch-session-gate.sh (CHECKSUM MISMATCH)
+      Expected: c9eef572...
+      Actual:   a1b2c3d4...
+```
+
+### Reviewing the update log
+
+```bash
+cat ~/.claude/jmunch-update.log
+```
+
+```
+[2026-03-17T14:30:00Z] Updated: 59eb2a8 -> 7642ab2
+  hooks/global/auto-update-hooks.sh
+  scripts/sync-hooks.sh
+```
+
+### What we recommend
+
+- **Track `stable`** (the default) for production use
+- **Run `--verify`** after first install and periodically
+- **Read the hooks** — they're short bash scripts, each under 60 lines
+- **Check the log** if something feels off: `~/.claude/jmunch-update.log`
 
 ## Repository Structure
 
 ```
 hooks/
   global/                          # Install to ~/.claude/hooks/ (all projects)
+    auto-update-hooks.sh           # SessionStart — auto-pulls latest from GitHub
     jcodemunch-nudge.sh            # PreToolUse:Read — blocks Read on .py/.ts/.tsx
     jdocmunch-nudge.sh             # PreToolUse:Read — blocks Read on large .md files
     reindex-after-edit.sh          # PostToolUse:Write|Edit — triggers re-index
@@ -63,6 +123,11 @@ hooks/
     jmunch-sentinel-writer.sh      # PostToolUse — marks indexes as refreshed
     reindex-after-commit.sh        # PostToolUse:Bash — re-index after git commits
     track-genuine-savings.sh       # PostToolUse — tracks genuine token savings
+scripts/
+  sync-hooks.sh                    # Symlink all hooks to ~/.claude/hooks/ (with --verify)
+  release.command                  # Double-click to tag + release to stable branch
+  update-mcp-servers.command       # Double-click to update MCP server packages
+  generate-checksums.sh            # Regenerate CHECKSUMS.sha256 for a release
 rules/
   global-claude-md.md              # CLAUDE.md rules for ~/.claude/CLAUDE.md
   project-settings-example.json    # Example .claude/settings.json with all hooks
@@ -73,6 +138,7 @@ statusline/
   statusline-standalone.sh         # Standalone version (no VBW dependency)
 docs/
   setup-guide.md                   # Full step-by-step setup guide
+CHECKSUMS.sha256                   # SHA256 hashes for all distributed scripts
 ```
 
 ## How Enforcement Works

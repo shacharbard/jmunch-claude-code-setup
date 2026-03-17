@@ -1,24 +1,34 @@
 # jCodeMunch + jDocMunch Setup for Claude Code
 
-Hooks, rules, and statusline integration for [jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp) and [jDocMunch](https://github.com/jgravelle/jdocmunch-mcp) — two excellent MCP servers created by [J. Gravelle (jgravelle)](https://github.com/jgravelle) that dramatically reduce token usage in Claude Code.
+Hooks, rules, and statusline integration for [jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp) and [jDocMunch](https://github.com/jgravelle/jdocmunch-mcp) — two excellent MCP servers created by [J. Gravelle (jgravelle)](https://github.com/jgravelle) that dramatically reduce token usage in Claude Code. Optional [context-mode](https://github.com/mksglu/context-mode) integration for large data files and command outputs.
 
-> **Credit where it's due:** jCodeMunch and jDocMunch are built and maintained by [J. Gravelle](https://github.com/jgravelle). This repo does not contain those MCP servers — it provides a companion enforcement and tracking layer that helps Claude Code get the most out of them. All the clever indexing and symbol extraction is jgravelle's work.
+> **Credit where it's due:**
+> - [jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp) and [jDocMunch](https://github.com/jgravelle/jdocmunch-mcp) are built and maintained by [J. Gravelle](https://github.com/jgravelle). All the clever indexing and symbol extraction is jgravelle's work.
+> - [context-mode](https://github.com/mksglu/context-mode) is built and maintained by [mksglu](https://github.com/mksglu). The sandboxed execution, FTS5 indexing, and session persistence are mksglu's work.
+>
+> This repo does not contain any of those MCP servers — it provides a companion enforcement and tracking layer that helps Claude Code get the most out of them.
 
-## What jCodeMunch & jDocMunch Do
+## What It Covers
 
-- **[jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp)** (by jgravelle) indexes your code (Python, TypeScript) so Claude fetches individual functions instead of reading entire files. Saves ~85-95% of tokens on code exploration.
-- **[jDocMunch](https://github.com/jgravelle/jdocmunch-mcp)** (by jgravelle) indexes your docs (.md, .mdx, .rst) so Claude fetches specific sections instead of entire documents. Saves ~90-95% on doc lookups.
+| File type | MCP server | What it does | Token savings |
+|-----------|-----------|--------------|---------------|
+| Code (.py/.ts/.tsx) | **jCodeMunch** (by jgravelle) | Fetches individual functions via AST parsing | ~85-95% |
+| Docs (.md/.mdx/.rst) | **jDocMunch** (by jgravelle) | Fetches specific sections by heading | ~90-95% |
+| Data (.json/.html, large) | **context-mode** (by mksglu) | Sandboxes file reads, only filtered analysis enters context | ~90-98% |
+| Command outputs | **context-mode** (by mksglu) | Sandboxes test/build/search output | ~90-98% |
 
-This repo provides the full enforcement stack that makes Claude **actually use** these tools instead of falling back to `Read`:
+jCodeMunch + jDocMunch are **always included**. context-mode is **optional** — enable it per-project with a flag.
+
+This repo provides the enforcement stack that makes Claude **actually use** these tools instead of falling back to `Read` and `Bash`:
 
 | Layer | What | Effect |
 |-------|------|--------|
-| CLAUDE.md rules | Instructions | Tells Claude *when* to use jCodeMunch/jDocMunch |
-| PreToolUse nudge hooks | Non-blocking | Reminds Claude when it tries `Read` on code/doc files |
+| CLAUDE.md rules | Instructions | Tells Claude *when* to use each MCP tool |
+| PreToolUse nudge hooks | Blocking | Redirects Read/Bash to the right MCP tool |
 | Session gate | Blocking | Blocks ALL tools until indexes are refreshed at session start |
 | Agent spawn gate | Blocking | Blocks subagent spawning without MCP instructions in prompt |
 | PostToolUse trackers | Passive | Tracks genuine token savings, triggers re-index after edits/commits |
-| Statusline | Display | Shows JCM/JDM savings counters in the Claude Code status bar |
+| Statusline | Display | Shows JCM/JDM/CTX savings counters in the Claude Code status bar |
 
 ## Quick Start
 
@@ -37,14 +47,19 @@ This clones the repo to `~/.jmunch-hooks`, symlinks all hooks globally, verifies
 
 ### Set up a project
 
-For each project where you want jCodeMunch/jDocMunch enforcement:
+For each project where you want enforcement:
 
 ```bash
 cd /path/to/your/project
+
+# jCodeMunch + jDocMunch only (default)
 bash ~/.jmunch-hooks/scripts/init-project.sh
+
+# jCodeMunch + jDocMunch + context-mode (full coverage)
+bash ~/.jmunch-hooks/scripts/init-project.sh --context-mode
 ```
 
-Or do both in one step:
+Or do both install + project setup in one step:
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/shacharbard/jmunch-claude-code-setup/stable/install.sh | bash -s -- --project /path/to/your/project
@@ -54,9 +69,19 @@ This creates everything the project needs:
 - `.claude/hooks/` — symlinks to the global hooks (always up to date)
 - `.claude/settings.json` — hook registrations (session gate, nudges, agent gate, savings tracking)
 - `.claude/settings.local.json` — MCP tool permissions (no approval prompts)
-- `.mcp.json` — MCP server config (jcodemunch + jdocmunch)
+- `.mcp.json` — MCP server config (jcodemunch + jdocmunch, optionally context-mode)
 
 Safe to re-run — skips existing files, backs up before overwriting.
+
+### context-mode: do I need it?
+
+| If you... | Use |
+|-----------|-----|
+| Work with Python/TypeScript code and markdown docs | Default (`init-project.sh`) — jCodeMunch + jDocMunch is all you need |
+| Also work with large JSON files, HTML, or run test suites with long output | `init-project.sh --context-mode` — adds data file + command output sandboxing |
+| Already have context-mode installed via npm | `--context-mode` just registers the hooks and MCP config — it doesn't install context-mode itself. The `.mcp.json` uses `npx -y context-mode` which auto-downloads on first use. |
+| Don't use context-mode and don't want it | Do nothing. The default setup doesn't touch context-mode. Even if the hooks are symlinked globally, they check your project's `.mcp.json` before doing anything — no context-mode in `.mcp.json` = no enforcement, zero impact. |
+| Want to add context-mode to a project later | Re-run `init-project.sh --context-mode` — it adds what's missing without overwriting existing config. |
 
 ### Add CLAUDE.md rules
 
@@ -127,6 +152,8 @@ hooks/
     auto-update-hooks.sh           # SessionStart — auto-pulls latest from GitHub
     jcodemunch-nudge.sh            # PreToolUse:Read — blocks Read on .py/.ts/.tsx
     jdocmunch-nudge.sh             # PreToolUse:Read — blocks Read on large .md files
+    context-mode-nudge.sh          # PreToolUse:Read — blocks Read on large .json/.html (opt-in)
+    context-mode-bash-nudge.sh     # PreToolUse:Bash — blocks large-output commands (opt-in)
     reindex-after-edit.sh          # PostToolUse:Write|Edit — triggers re-index
   project/                         # Install to .claude/hooks/ (per project)
     agent-jcodemunch-gate.sh       # PreToolUse:Agent — blocks agents without MCP instructions
@@ -134,7 +161,8 @@ hooks/
     jmunch-session-gate.sh         # PreToolUse:* — blocks all tools until indexes ready
     jmunch-sentinel-writer.sh      # PostToolUse — marks indexes as refreshed
     reindex-after-commit.sh        # PostToolUse:Bash — re-index after git commits
-    track-genuine-savings.sh       # PostToolUse — tracks genuine token savings
+    track-genuine-savings.sh       # PostToolUse — tracks jCodeMunch/jDocMunch token savings
+    track-genuine-savings-ctx.sh   # PostToolUse — tracks context-mode token savings (opt-in)
 scripts/
   init-project.sh                  # Set up jmunch enforcement in a new project (one command)
   sync-hooks.sh                    # Symlink all hooks to ~/.claude/hooks/ (with --verify)
@@ -171,6 +199,18 @@ Claude needs a function
   -> jcodemunch-nudge.sh fires: BLOCKED, use get_symbol
   -> Claude uses get_symbol instead
   -> track-genuine-savings.sh logs tokens_saved
+
+Claude needs a large JSON file (context-mode enabled)
+  -> Tries Read on data.json (500 lines)
+  -> context-mode-nudge.sh fires: BLOCKED, use ctx_execute_file
+  -> Claude uses ctx_execute_file instead
+  -> track-genuine-savings-ctx.sh logs tokens_saved
+
+Claude runs a test suite (context-mode enabled)
+  -> Tries Bash("pytest tests/")
+  -> context-mode-bash-nudge.sh fires: BLOCKED, use ctx_execute
+  -> Claude uses ctx_execute(language="shell", ...) instead
+  -> track-genuine-savings-ctx.sh logs tokens_saved
 
 Claude spawns a subagent
   -> agent-jcodemunch-gate.sh checks prompt for MCP instructions
@@ -241,7 +281,10 @@ The statusline scripts read `_genuine_savings.json` and split the `by_tool` tota
 - `mcp__jcodemunch__*` entries sum to **JCM** (jCodeMunch savings)
 - `mcp__jdocmunch__*` entries sum to **JDM** (jDocMunch savings)
 
-These are formatted with K/M suffixes and displayed as `JCM:920.376K JDM:2.108K`.
+If context-mode is enabled, `_genuine_savings_ctx.json` adds a third counter:
+- `mcp__context-mode__*` entries sum to **CTX** (context-mode savings)
+
+These are formatted with K/M suffixes and displayed as `JCM:920.376K JDM:2.108K CTX:58.375K`.
 
 > **Note:** The MCP servers also write their own `_savings.json` files (`~/.code-index/_savings.json` and `~/.doc-index/_savings.json`) with `total_tokens_saved` — but those include optimistic counts from all tools. The statusline deliberately reads the genuine file, not those.
 
@@ -281,7 +324,18 @@ When spawning subagents, include these instructions in the prompt to ensure they
 - Fall back to Read ONLY for small docs (<50 lines) or planning files
 ```
 
-The `agent-jcodemunch-gate.sh` hook enforces this — spawning is blocked if these instructions are missing.
+If context-mode is enabled, add this block after the above:
+
+```
+**Command & data navigation (MANDATORY):** Use context-mode MCP tools for large outputs.
+- Test/build/search commands: mcp__context-mode__ctx_execute(language="shell", code="...") instead of Bash
+- Large JSON (>100 lines): mcp__context-mode__ctx_execute_file instead of Read
+- Large HTML: mcp__context-mode__ctx_execute_file instead of Read
+- ctx_execute_file provides file content as FILE_CONTENT variable — do NOT use open() or sys.argv
+- Bash only for: git status/add/commit/push, ls/mkdir/mv, package installs, file redirects
+```
+
+The `agent-jcodemunch-gate.sh` hook enforces jCodeMunch/jDocMunch instructions — spawning is blocked if these are missing.
 
 ## Requirements
 
@@ -293,11 +347,14 @@ The `agent-jcodemunch-gate.sh` hook enforces this — spawning is blocked if the
 
 ## Credits
 
-- [jCodeMunch MCP](https://github.com/jgravelle/jcodemunch-mcp) by jgravelle
-- [jDocMunch MCP](https://github.com/jgravelle/jdocmunch-mcp) by jgravelle
+- [jCodeMunch MCP](https://github.com/jgravelle/jcodemunch-mcp) by [jgravelle](https://github.com/jgravelle)
+- [jDocMunch MCP](https://github.com/jgravelle/jdocmunch-mcp) by [jgravelle](https://github.com/jgravelle)
+- [context-mode](https://github.com/mksglu/context-mode) by [mksglu](https://github.com/mksglu)
 
 ## License
 
 The hooks, rules, statusline scripts, and documentation in this repository are licensed under the [MIT License](LICENSE).
 
-This repo does **not** include the jCodeMunch or jDocMunch MCP servers themselves — only configuration and enforcement tooling that works with them. The MCP servers are separate projects by [jgravelle](https://github.com/jgravelle) and are subject to their own licenses. See [jcodemunch-mcp](https://github.com/jgravelle/jcodemunch-mcp) and [jdocmunch-mcp](https://github.com/jgravelle/jdocmunch-mcp) for their respective terms.
+This repo does **not** include jCodeMunch, jDocMunch, or context-mode — only configuration and enforcement tooling that works with them. The MCP servers are separate projects by their respective authors and are subject to their own licenses:
+- jCodeMunch/jDocMunch: see [jcodemunch-mcp](https://github.com/jgravelle/jcodemunch-mcp) and [jdocmunch-mcp](https://github.com/jgravelle/jdocmunch-mcp)
+- context-mode: [ELv2 (Elastic License v2)](https://github.com/mksglu/context-mode/blob/main/LICENSE)

@@ -1,0 +1,9 @@
+# VBW planning (local only)
+.vbw-planning/
+
+# Claude Code local config
+CLAUDE.md
+.mcp.json
+
+# Backup files from sync-hooks.sh
+*.bak

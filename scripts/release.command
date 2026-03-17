@@ -3,10 +3,15 @@
 #
 # What it does:
 #   1. Regenerates CHECKSUMS.sha256
-#   2. Runs sync-hooks.sh --verify to confirm integrity
+#   2. Verifies all file checksums
 #   3. Shows what changed since last tag
 #   4. Asks for a version tag (e.g., v1.0.0)
-#   5. Commits checksums, tags the release, pushes everything
+#   5. Commits checksums, tags the release, pushes main
+#   6. Fast-forwards 'stable' branch to the tagged commit and pushes
+#
+# Branch model:
+#   main   — your working branch (every commit)
+#   stable — what users track (only updated on release)
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -102,16 +107,37 @@ echo "→ Tagging $VERSION..."
 git tag -a "$VERSION" -m "Release $VERSION"
 echo "  ✓ Tagged"
 
-echo "→ Pushing..."
+echo "→ Pushing main..."
 git push && git push --tags
-echo "  ✓ Pushed"
+echo "  ✓ Pushed main + tags"
+
+# --- Step 6: Fast-forward stable branch ---
+echo ""
+echo "→ Updating stable branch..."
+CURRENT_BRANCH=$(git branch --show-current)
+
+# Fast-forward stable to the tagged commit
+git checkout stable --quiet 2>/dev/null
+if git merge --ff-only "$VERSION" --quiet 2>/dev/null; then
+  git push origin stable --quiet
+  echo "  ✓ stable branch updated to $VERSION"
+else
+  echo "  ✗ Could not fast-forward stable (manual merge needed)"
+fi
+
+# Return to original branch
+git checkout "$CURRENT_BRANCH" --quiet 2>/dev/null
 
 echo ""
 echo "================================="
 echo "  ✓ Released $VERSION"
 echo "================================="
 echo ""
-echo "  Users will auto-update on next session start."
+echo "  main:   pushed (all commits)"
+echo "  stable: fast-forwarded to $VERSION"
+echo "  tags:   $VERSION pushed"
+echo ""
+echo "  Users on 'stable' will auto-update on next session start."
 echo "  They can verify with: sync-hooks.sh --verify"
 echo ""
 echo "Press any key to close..."

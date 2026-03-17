@@ -13,7 +13,9 @@
 
 # --- Config ---
 # Users: set JMUNCH_REPO_DIR to override the default repo location
+# Users: set JMUNCH_BRANCH to track a different branch (default: stable)
 REPO_DIR="${JMUNCH_REPO_DIR:-$HOME/Development/AI/jmunch-claude-code-setup}"
+BRANCH="${JMUNCH_BRANCH:-stable}"
 EXPECTED_REMOTE="shacharbard/jmunch-claude-code-setup"
 STAMP="/tmp/jmunch-auto-update-$(id -u)"
 LOG="$HOME/.claude/jmunch-update.log"
@@ -37,6 +39,12 @@ case "$REMOTE_URL" in
     exit 0
     ;;
 esac
+
+# Ensure we're on the right branch
+CURRENT_BRANCH=$(git -C "$REPO_DIR" branch --show-current 2>/dev/null)
+if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
+  git -C "$REPO_DIR" checkout "$BRANCH" --quiet 2>/dev/null || exit 0
+fi
 
 # Record pre-pull state
 BEFORE=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null)

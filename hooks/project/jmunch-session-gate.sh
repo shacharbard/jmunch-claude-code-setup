@@ -3,20 +3,45 @@
 # Exit 2 = block the tool call with message
 # Exit 0 = allow
 #
-# Sentinel: /tmp/jmunch-ready-<hash of cwd>
-# Hash is derived from project directory, stable across process wrappers and subagents.
+# Sentinel: /tmp/jmunch-ready-<hash of project root>
+# Hash is derived from the git root (resolving worktrees and submodules),
+# stable across process wrappers, subagents, worktrees, and non-root CWDs.
 #
 # Install: Copy to .claude/hooks/ in your project
 # Register: PreToolUse matcher "*" in project .claude/settings.json
 # Paired with: jmunch-session-start.sh, jmunch-sentinel-writer.sh
 
-# Read stdin once — we need it for both sentinel hash and tool name
+# Read stdin once — we need it for tool name extraction
 INPUT=$(cat)
-CWD=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('cwd',''))" 2>/dev/null)
-if [ -z "$CWD" ]; then
-  CWD=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+
+# --- Stable Sentinel Path Computation ---
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -n "$PROJECT_ROOT" ]; then
+    _WALK="$PROJECT_ROOT"
+    while true; do
+        _PARENT="$(git -C "$_WALK" rev-parse --show-superproject-working-tree 2>/dev/null)"
+        [ -z "$_PARENT" ] && break
+        _WALK="$_PARENT"
+    done
+    PROJECT_ROOT="$_WALK"
 fi
-HASH=$(echo "$CWD" | md5 -q 2>/dev/null || echo "$CWD" | md5sum 2>/dev/null | cut -c1-32)
+if [ -z "$PROJECT_ROOT" ]; then
+    PROJECT_ROOT="$(pwd -P)"
+fi
+
+# --- Git Worktree Detection ---
+if [ -n "$PROJECT_ROOT" ]; then
+    _GIT_DIR="$(git -C "$PROJECT_ROOT" rev-parse --git-dir 2>/dev/null)"
+    _GIT_COMMON="$(git -C "$PROJECT_ROOT" rev-parse --git-common-dir 2>/dev/null)"
+    [ "${_GIT_DIR:0:1}" != "/" ]    && _GIT_DIR="$PROJECT_ROOT/$_GIT_DIR"
+    [ "${_GIT_COMMON:0:1}" != "/" ] && _GIT_COMMON="$PROJECT_ROOT/$_GIT_COMMON"
+    if [ "$_GIT_DIR" != "$_GIT_COMMON" ]; then
+        _MAIN_ROOT="$(cd "$_GIT_COMMON/.." 2>/dev/null && pwd -P)"
+        [ -n "$_MAIN_ROOT" ] && PROJECT_ROOT="$_MAIN_ROOT"
+    fi
+fi
+
+HASH=$(echo "$PROJECT_ROOT" | md5 -q 2>/dev/null || echo "$PROJECT_ROOT" | md5sum | awk '{print $1}')
 SENTINEL="/tmp/jmunch-ready-${HASH}"
 
 # If sentinel has both "code" and "doc" lines AND no "stale" marker, session is ready

@@ -28,11 +28,34 @@ case "$OUTPUT" in
 esac
 
 # Mark the sentinel as stale — the session gate will block until re-indexed
-CWD=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('cwd',''))" 2>/dev/null)
-if [ -z "$CWD" ]; then
-  CWD=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+# --- Stable Sentinel Path Computation ---
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -n "$PROJECT_ROOT" ]; then
+    _WALK="$PROJECT_ROOT"
+    while true; do
+        _PARENT="$(git -C "$_WALK" rev-parse --show-superproject-working-tree 2>/dev/null)"
+        [ -z "$_PARENT" ] && break
+        _WALK="$_PARENT"
+    done
+    PROJECT_ROOT="$_WALK"
 fi
-HASH=$(echo "$CWD" | md5 -q 2>/dev/null || echo "$CWD" | md5sum 2>/dev/null | cut -c1-32)
+if [ -z "$PROJECT_ROOT" ]; then
+    PROJECT_ROOT="$(pwd -P)"
+fi
+
+# --- Git Worktree Detection ---
+if [ -n "$PROJECT_ROOT" ]; then
+    _GIT_DIR="$(git -C "$PROJECT_ROOT" rev-parse --git-dir 2>/dev/null)"
+    _GIT_COMMON="$(git -C "$PROJECT_ROOT" rev-parse --git-common-dir 2>/dev/null)"
+    [ "${_GIT_DIR:0:1}" != "/" ]    && _GIT_DIR="$PROJECT_ROOT/$_GIT_DIR"
+    [ "${_GIT_COMMON:0:1}" != "/" ] && _GIT_COMMON="$PROJECT_ROOT/$_GIT_COMMON"
+    if [ "$_GIT_DIR" != "$_GIT_COMMON" ]; then
+        _MAIN_ROOT="$(cd "$_GIT_COMMON/.." 2>/dev/null && pwd -P)"
+        [ -n "$_MAIN_ROOT" ] && PROJECT_ROOT="$_MAIN_ROOT"
+    fi
+fi
+
+HASH=$(echo "$PROJECT_ROOT" | md5 -q 2>/dev/null || echo "$PROJECT_ROOT" | md5sum | awk '{print $1}')
 SENTINEL="/tmp/jmunch-ready-${HASH}"
 
 # Overwrite sentinel with ONLY "stale" — removes old "code"/"doc" lines

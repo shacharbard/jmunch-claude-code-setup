@@ -23,14 +23,17 @@ if [[ "$FILE_PATH" == *.py || "$FILE_PATH" == *.ts || "$FILE_PATH" == *.tsx ]]; 
     exit 0
   fi
 
-  # Fallback: if jCodeMunch index doesn't exist, allow Read (MCP server may be down)
-  # NOTE: Replace the index path below with your project's actual index file.
-  # Run `mcp__jcodemunch__list_repos` to find your repo ID, then check:
-  #   ~/.code-index/<repo-id>.json
-  # if [ ! -f "$HOME/.code-index/<your-repo-id>.json" ]; then
-  #   echo "jCodeMunch index not found — allowing Read as fallback."
-  #   exit 0
-  # fi
+  # Fallback: if jCodeMunch is not configured in this project, allow Read
+  # Check for .mcp.json with jcodemunch, or project hooks with session gate
+  CWD=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('cwd',''))" 2>/dev/null)
+  if [ -n "$CWD" ]; then
+    MCP_FILE="$CWD/.mcp.json"
+  else
+    MCP_FILE=".mcp.json"
+  fi
+  if [ ! -f "$MCP_FILE" ] || ! grep -q 'jcodemunch' "$MCP_FILE" 2>/dev/null; then
+    exit 0
+  fi
 
   # Block with instruction to use jCodeMunch
   echo "BLOCKED: Use jCodeMunch instead of Read for '$BASENAME'.

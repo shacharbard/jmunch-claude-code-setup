@@ -48,6 +48,14 @@ case "$TOOL" in
   mcp__context-mode__*) exit 0 ;;
 esac
 
+# Always allow: agent communication and lifecycle tools
+# Blocking these traps subagents — they finish work but can't return results
+case "$TOOL" in
+  SendMessage|TaskUpdate|TaskCreate|TaskGet|TaskList|TaskOutput|TaskStop) exit 0 ;;
+  Agent|ExitPlanMode|EnterPlanMode) exit 0 ;;
+  AskUserQuestion) exit 0 ;;
+esac
+
 # Block everything else
 echo "BLOCKED: jCodeMunch/jDocMunch indexes not yet refreshed this session.
 You MUST run BOTH of these IMMEDIATELY before doing any other work:

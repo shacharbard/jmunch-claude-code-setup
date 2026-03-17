@@ -3,8 +3,6 @@
 All notable changes to this project are documented here.
 Updated automatically on each release.
 
-## v1.0.1
-
 ### Subagent fix: communication tools no longer blocked
 
 The session gate (`PreToolUse:*`) was blocking ALL tools until indexes were refreshed — including `SendMessage` and `TaskUpdate`. This trapped subagents: they'd finish their work but couldn't return results to the parent agent.

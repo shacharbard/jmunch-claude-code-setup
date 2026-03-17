@@ -3,6 +3,12 @@
 All notable changes to this project are documented here.
 Updated automatically on each release.
 
+## v1.0.2
+
+- chore(release): update checksums after sentinel hash fix
+- fix(hooks): stabilize sentinel hash for worktrees, submodules, and non-root sessions
+
+
 ## v1.0.1
 
 - fix(release): find repo correctly when run from Desktop

@@ -5,11 +5,12 @@
 # Creates symlinks, MCP config, tool permissions, and hook registrations.
 #
 # Usage:
-#   bash ~/Development/AI/jmunch-claude-code-setup/scripts/init-project.sh
+#   bash ~/.jmunch-hooks/scripts/init-project.sh                  # jCodeMunch + jDocMunch only
+#   bash ~/.jmunch-hooks/scripts/init-project.sh --context-mode   # + context-mode enforcement
 #
 # What it does:
 #   1. Symlinks hooks from ~/.claude/hooks/ into .claude/hooks/
-#   2. Creates .mcp.json (jcodemunch + jdocmunch servers)
+#   2. Creates .mcp.json (jcodemunch + jdocmunch, optionally context-mode)
 #   3. Creates/updates .claude/settings.local.json (tool permissions)
 #   4. Creates/updates .claude/settings.json (hook registrations)
 #
@@ -21,13 +22,21 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROJECT_DIR="$(pwd)"
 GLOBAL_HOOKS="$HOME/.claude/hooks"
+ENABLE_CTX=false
+
+# Parse args
+for arg in "$@"; do
+  case "$arg" in
+    --context-mode) ENABLE_CTX=true ;;
+  esac
+done
 
 echo "================================="
 echo "  jmunch project init"
 echo "================================="
 echo ""
 echo "  Project: $PROJECT_DIR"
-echo "  Repo:    $REPO_ROOT"
+echo "  Context-mode: $([ "$ENABLE_CTX" = true ] && echo "enabled" || echo "disabled (use --context-mode to enable)")"
 echo ""
 
 # --- Guard: don't init inside the setup repo itself ---
@@ -59,6 +68,14 @@ HOOKS=(
   track-genuine-savings.sh
 )
 
+if [ "$ENABLE_CTX" = true ]; then
+  HOOKS+=(
+    context-mode-nudge.sh
+    context-mode-bash-nudge.sh
+    track-genuine-savings-ctx.sh
+  )
+fi
+
 for hook in "${HOOKS[@]}"; do
   DEST=".claude/hooks/$hook"
   if [ -L "$DEST" ]; then
@@ -66,10 +83,10 @@ for hook in "${HOOKS[@]}"; do
   elif [ -f "$DEST" ]; then
     mv "$DEST" "${DEST}.bak"
     ln -sf "$GLOBAL_HOOKS/$hook" "$DEST"
-    echo "  ✓ $hook → $GLOBAL_HOOKS/$hook (old file backed up)"
+    echo "  ✓ $hook (old file backed up)"
   else
     ln -sf "$GLOBAL_HOOKS/$hook" "$DEST"
-    echo "  ✓ $hook → $GLOBAL_HOOKS/$hook"
+    echo "  ✓ $hook"
   fi
 done
 echo ""
@@ -77,16 +94,30 @@ echo ""
 # --- Step 2: MCP config ---
 echo "→ MCP config (.mcp.json)"
 if [ -f .mcp.json ]; then
-  # Check if jcodemunch is already configured
   if jq -e '.mcpServers.jcodemunch' .mcp.json >/dev/null 2>&1; then
     echo "  ○ .mcp.json already has jcodemunch configured"
   else
     echo "  ⚠ .mcp.json exists but missing jcodemunch — merge manually from:"
     echo "    $REPO_ROOT/rules/mcp-example.json"
   fi
+  # Add context-mode if enabled and missing
+  if [ "$ENABLE_CTX" = true ]; then
+    if jq -e '.mcpServers."context-mode"' .mcp.json >/dev/null 2>&1; then
+      echo "  ○ .mcp.json already has context-mode configured"
+    else
+      jq '.mcpServers["context-mode"] = {"type":"stdio","command":"npx","args":["-y","context-mode"]}' .mcp.json > .mcp.json.tmp && mv .mcp.json.tmp .mcp.json
+      echo "  ✓ Added context-mode to .mcp.json"
+    fi
+  fi
 else
-  cp "$REPO_ROOT/rules/mcp-example.json" .mcp.json
-  echo "  ✓ .mcp.json created (jcodemunch + jdocmunch + context-mode)"
+  if [ "$ENABLE_CTX" = true ]; then
+    cp "$REPO_ROOT/rules/mcp-example.json" .mcp.json
+    echo "  ✓ .mcp.json created (jcodemunch + jdocmunch + context-mode)"
+  else
+    # Create without context-mode
+    jq 'del(.mcpServers["context-mode"])' "$REPO_ROOT/rules/mcp-example.json" > .mcp.json
+    echo "  ✓ .mcp.json created (jcodemunch + jdocmunch)"
+  fi
 fi
 echo ""
 
@@ -95,7 +126,6 @@ echo "→ Tool permissions (.claude/settings.local.json)"
 mkdir -p .claude
 if [ -f .claude/settings.local.json ]; then
   echo "  ○ .claude/settings.local.json already exists"
-  # Check if MCP tools are already allowed
   if jq -e '.permissions.allow[]?' .claude/settings.local.json 2>/dev/null | grep -q 'mcp__jcodemunch' 2>/dev/null; then
     echo "    (jcodemunch tools already in allowlist)"
   else
@@ -103,22 +133,25 @@ if [ -f .claude/settings.local.json ]; then
     echo "    $REPO_ROOT/rules/allowed-tools.txt"
   fi
 else
-  # Build settings.local.json with MCP tool permissions
   TOOLS_JSON=$(grep -v '^#' "$REPO_ROOT/rules/allowed-tools.txt" | grep -v '^$' | jq -R . | jq -s .)
+  SERVERS='["jcodemunch", "jdocmunch"]'
+  if [ "$ENABLE_CTX" = true ]; then
+    SERVERS='["jcodemunch", "jdocmunch", "context-mode"]'
+  fi
   jq -n \
     --argjson tools "$TOOLS_JSON" \
+    --argjson servers "$SERVERS" \
     '{
       "permissions": { "allow": $tools },
-      "enabledMcpjsonServers": ["jcodemunch", "jdocmunch"]
+      "enabledMcpjsonServers": $servers
     }' > .claude/settings.local.json
-  echo "  ✓ .claude/settings.local.json created (MCP tools allowed)"
+  echo "  ✓ .claude/settings.local.json created"
 fi
 echo ""
 
 # --- Step 4: Hook registrations ---
 echo "→ Hook registrations (.claude/settings.json)"
 if [ -f .claude/settings.json ]; then
-  # Check if session gate is already registered
   if grep -q 'jmunch-session-gate' .claude/settings.json 2>/dev/null; then
     echo "  ○ .claude/settings.json already has jmunch hooks registered"
   else
@@ -126,8 +159,39 @@ if [ -f .claude/settings.json ]; then
     echo "    Merge hooks from: $REPO_ROOT/rules/project-settings-example.json"
   fi
 else
-  # Create settings.json with all hook registrations
-  cat > .claude/settings.json << 'SETTINGS'
+  # Build context-mode hook entries
+  CTX_READ_HOOKS=""
+  CTX_BASH_HOOKS=""
+  CTX_POST_HOOKS=""
+  if [ "$ENABLE_CTX" = true ]; then
+    CTX_READ_HOOKS=',
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/context-mode-nudge.sh"
+          }'
+    CTX_BASH_HOOKS=',
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/context-mode-bash-nudge.sh"
+          }
+        ]
+      }'
+    CTX_POST_HOOKS=',
+      {
+        "matcher": "mcp__context-mode__*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/track-genuine-savings-ctx.sh"
+          }
+        ]
+      }'
+  fi
+
+  cat > .claude/settings.json << SETTINGS
 {
   "hooks": {
     "SessionStart": [
@@ -160,7 +224,7 @@ else
           {
             "type": "command",
             "command": "bash .claude/hooks/jdocmunch-nudge.sh"
-          }
+          }${CTX_READ_HOOKS}
         ]
       },
       {
@@ -171,7 +235,7 @@ else
             "command": "bash .claude/hooks/agent-jcodemunch-gate.sh"
           }
         ]
-      }
+      }${CTX_BASH_HOOKS}
     ],
     "PostToolUse": [
       {
@@ -218,12 +282,12 @@ else
             "command": "bash .claude/hooks/track-genuine-savings.sh"
           }
         ]
-      }
+      }${CTX_POST_HOOKS}
     ]
   }
 }
 SETTINGS
-  echo "  ✓ .claude/settings.json created (all hooks registered)"
+  echo "  ✓ .claude/settings.json created"
 fi
 echo ""
 
@@ -232,12 +296,14 @@ echo "================================="
 echo "  ✓ Project initialized"
 echo "================================="
 echo ""
-echo "  Next: Start a Claude Code session in this project."
-echo "  The session gate will enforce jCodeMunch/jDocMunch usage."
+echo "  Enforcement:"
+echo "    ✓ jCodeMunch (code files: .py/.ts/.tsx)"
+echo "    ✓ jDocMunch  (doc files: .md/.mdx/.rst)"
+if [ "$ENABLE_CTX" = true ]; then
+echo "    ✓ context-mode (data files: .json/.html, command outputs)"
+else
+echo "    ○ context-mode (disabled — re-run with --context-mode to enable)"
+fi
 echo ""
-echo "  Files created:"
-echo "    .claude/hooks/         → symlinks to global hooks"
-echo "    .claude/settings.json  → hook registrations"
-echo "    .claude/settings.local.json → MCP tool permissions"
-echo "    .mcp.json              → MCP server config"
+echo "  Next: Start a Claude Code session in this project."
 echo ""

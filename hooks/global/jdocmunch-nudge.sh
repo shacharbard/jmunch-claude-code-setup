@@ -9,8 +9,12 @@
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('file_path',''))" 2>/dev/null)
 
-# Only enforce for documentation files
-if [[ "$FILE_PATH" == *.md || "$FILE_PATH" == *.mdx || "$FILE_PATH" == *.rst ]]; then
+# Only enforce for documentation and structured files
+# Note: .json, .html, .htm are handled by context-mode-nudge.sh with smart routing
+if [[ "$FILE_PATH" == *.md || "$FILE_PATH" == *.mdx || "$FILE_PATH" == *.rst || \
+      "$FILE_PATH" == *.adoc || "$FILE_PATH" == *.asc || "$FILE_PATH" == *.asciidoc || \
+      "$FILE_PATH" == *.ipynb || "$FILE_PATH" == *.xml || "$FILE_PATH" == *.svg || \
+      "$FILE_PATH" == *.xhtml ]]; then
   BASENAME=$(basename "$FILE_PATH")
 
   # Always allow instruction/config files that should be read fully

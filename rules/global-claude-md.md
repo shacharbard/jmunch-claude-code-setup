@@ -20,7 +20,7 @@ When jCodeMunch MCP tools (`mcp__jcodemunch__*`) are available in a project, the
 
 ### When Read is correct
 
-- Non-code files (JSON, MD, HTML, YAML, config)
+- Non-code files (YAML, small config) — but route docs/structured files to jDocMunch and data files to context-mode
 - Full file context needed (imports, globals, module-level flow)
 - Very small files (<50 lines)
 - Files not yet indexed (newly created before next `index_folder`)
@@ -32,7 +32,7 @@ Reading a full file consumes the entire content as tokens. `get_symbol` returns 
 
 ## Documentation Navigation — jDocMunch (MANDATORY when available)
 
-When jDocMunch MCP tools (`mcp__jdocmunch__*`) are available in a project, they are the **primary tool for exploring documentation files** (`.md`, `.mdx`, `.rst`). Do NOT use `Read` on large documentation files unless you explicitly need the full document.
+When jDocMunch MCP tools (`mcp__jdocmunch__*`) are available in a project, they are the **primary tool for exploring documentation and structured files** (`.md`, `.mdx`, `.rst`, `.adoc`, `.txt`, `.ipynb`, `.html`, `.json`, `.jsonc`, `.xml`, `.svg`, `.xhtml`, `.tscn`, `.tres`). Do NOT use `Read` on large documentation or structured files unless you explicitly need the full document.
 
 ### Rules
 
@@ -47,8 +47,56 @@ When jDocMunch MCP tools (`mcp__jdocmunch__*`) are available in a project, they 
 
 ### When Read is correct
 
-- Small documentation files (<50 lines)
-- Non-doc files (JSON, YAML, config, code)
+- Small documentation/structured files (<50 lines)
+- Non-indexed file types (YAML, TOML, CSV, code files)
 - Full document context needed (cross-references, overall structure)
 - Files not yet indexed (newly created before next `index_local`)
 - CLAUDE.md and other instruction files (always read fully)
+
+## Command Output & Data File Navigation — context-mode (when available)
+
+When context-mode MCP tools (`mcp__context-mode__*`) are available, use them for **large command outputs** and **data files that need code-based processing** instead of letting raw content flood the context window.
+
+### Command Output Isolation (primary use case)
+
+Use `ctx_execute(language="shell", code="...")` instead of `Bash` for commands that produce large output:
+
+- **Test suites:** `ctx_execute(language="shell", code="pytest ...")` — not `Bash("pytest ...")`
+- **git log/diff (unbounded):** `ctx_execute(language="shell", code="git log ...")` — not `Bash("git log")`
+- **Recursive search:** `ctx_execute(language="shell", code="find . -name ...")` — not `Bash("find ...")`
+- **API calls:** `ctx_execute(language="shell", code="curl ...")` — not `Bash("curl ...")`
+- **Build output:** `ctx_execute(language="shell", code="make ...")` — not `Bash("make ...")`
+
+Outputs >5KB are automatically filtered by intent — only relevant portions enter context (98% savings).
+
+**When Bash IS correct:** git status/add/commit/push, file management (ls/mkdir/mv/cp), package installs, inline one-liners, commands with output redirected to a file.
+
+### Data File Rules
+
+- **JSON arrays needing filtering/transformation** (data dumps, log arrays): Use `ctx_execute_file(path, language, code)` — file content available as `FILE_CONTENT` variable
+- **Structured JSON** (object with named keys, API specs, config): Use **jDocMunch** `search_sections` / `get_section` instead
+- **HTML with headings** (documentation-like): Use **jDocMunch** — it parses heading structure
+- **HTML without headings** (raw data tables, generated output): Use `ctx_execute_file`
+- **CSV, TOML files needing processing:** Use `ctx_execute_file`
+- **Index a file for search:** Use `ctx_index(path="file.json", source="label")`
+- **Batch operations:** Use `ctx_batch_execute(commands=[...], queries=[...])` — runs commands AND searches in one call
+- **Search previous outputs:** Use `ctx_search(queries=["terms"])`
+- **Index external docs:** Use `ctx_fetch_and_index` for URLs, then `ctx_search` to query
+- **Small config JSON** (package.json, tsconfig.json, <100 lines): Direct Read is fine
+
+### Four-tier navigation
+
+1. **Code** (.py/.ts/.tsx) → jCodeMunch (`get_symbol`, `search_symbols`)
+2. **Docs & structured files** (.md, .mdx, .rst, .adoc, .txt, .ipynb, .html, .json, .jsonc, .xml, .svg, .xhtml, .tscn, .tres) → jDocMunch (`search_sections`, `get_section`)
+3. **Data processing** (JSON arrays, CSV, TOML, large command outputs, test suites, build logs) → context-mode (`ctx_execute_file`, `ctx_execute`)
+4. **Small config** (package.json, tsconfig.json, <50-100 lines) → Read directly
+
+### When Bash/Read is correct (not context-mode)
+
+- Small commands with predictable output (git status, ls, pwd, echo)
+- Git operations that modify state (add, commit, push, checkout)
+- Package installs (npm install, pip install)
+- Small JSON/HTML files (<100 lines) or config files
+- Files that need full context for editing (e.g., known_verdicts.json)
+- Code files → use jCodeMunch instead
+- Doc/structured files → use jDocMunch instead

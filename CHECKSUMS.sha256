@@ -1,6 +1,6 @@
 90c44e50994ef844d51f4a6f6844c93aa028610dfb26d5b52040d51974dcc8c6  hooks/global/auto-update-hooks.sh
 33e764dbf2e491702672403f2c9adde1863cc9a1296a7875ae765be947c5a40d  hooks/global/context-mode-bash-nudge.sh
-92b35d3ffa353211107163666996e5db3373e3aa788b63bdb1d0b772037c1ea9  hooks/global/context-mode-nudge.sh
+0d2302da6c322506d0ad3ffabc48b03717a155d37c3c47102d1eaaf3c15ffc65  hooks/global/context-mode-nudge.sh
 a3ce3da38aeb61da4a74badeb1bf4133b4bbe92bbc693037cdb39c1fbed15eca  hooks/global/jcodemunch-nudge.sh
 b89c2c0cfd26d2b5827fa52e996dfc29d7d0ef3f724248c6adc0116487987d78  hooks/global/jdocmunch-nudge.sh
 1e612e831f7e72033a7979ba468ed6206155ecaac3aa455885e16a3138162a5a  hooks/global/reindex-after-edit.sh

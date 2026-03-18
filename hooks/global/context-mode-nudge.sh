@@ -121,8 +121,8 @@ with open(sys.argv[1], 'r') as f:
     MCP_FILE=".mcp.json"
   fi
   if [ ! -f "$MCP_FILE" ] || ! grep -q 'context-mode' "$MCP_FILE" 2>/dev/null; then
-    # No context-mode available — check if jDocMunch index exists as final fallback
-    if [ -d "$HOME/.doc-index/local" ]; then
+    # No context-mode available — only fall back to jDocMunch if the smart routing agreed
+    if [[ "$USE_JDOCMUNCH" == "true" ]] && [ -d "$HOME/.doc-index/local" ]; then
       echo "BLOCKED: Large $EXT file (${LINE_COUNT:-?} lines). Use jDocMunch instead of Read for '$BASENAME'.
   - Search: mcp__jdocmunch__search_sections(query=\"your search terms\")
   - Browse structure: mcp__jdocmunch__get_toc(path=\"$ABS_PATH\")

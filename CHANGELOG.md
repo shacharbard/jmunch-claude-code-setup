@@ -3,6 +3,14 @@
 All notable changes to this project are documented here.
 Updated automatically on each release.
 
+## v1.0.3
+
+- chore(release): regenerate checksums after routing fallback fix
+- fix(routing): respect smart routing decision in no-context-mode fallback
+- chore(release): regenerate checksums after v1.4 routing update
+- fix(routing): update jDocMunch/context-mode routing for v1.4 file types
+
+
 ## v1.0.2
 
 - chore(release): update checksums after sentinel hash fix

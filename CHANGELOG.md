@@ -3,6 +3,12 @@
 All notable changes to this project are documented here.
 Updated automatically on each release.
 
+## v1.0.4
+
+- fix(savings): separate JCM and JDM genuine savings into their own directories
+- feat(muninn): add MuninnDB Lite as optional cross-session memory layer
+
+
 ## v1.0.3
 
 - chore(release): regenerate checksums after routing fallback fix

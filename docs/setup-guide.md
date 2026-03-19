@@ -152,7 +152,6 @@ cp hooks/project/agent-jcodemunch-gate.sh .claude/hooks/
 cp hooks/project/jmunch-session-start.sh .claude/hooks/
 cp hooks/project/jmunch-session-gate.sh .claude/hooks/
 cp hooks/project/jmunch-sentinel-writer.sh .claude/hooks/
-cp hooks/project/reindex-after-commit.sh .claude/hooks/
 cp hooks/project/track-genuine-savings.sh .claude/hooks/
 
 # Make executable
@@ -170,7 +169,6 @@ chmod +x .claude/hooks/*.sh
 | `jdocmunch-nudge.sh` | PreToolUse:Read | **Blocks** Read on large .md/.mdx/.rst files |
 | `agent-jcodemunch-gate.sh` | PreToolUse:Agent | **Blocks** agent spawn without MCP instructions |
 | `reindex-after-edit.sh` | PostToolUse:Write\|Edit | Prompts re-index after code/doc changes (30s debounce) |
-| `reindex-after-commit.sh` | PostToolUse:Bash | Soft nudge to re-index after git commits (subagent-safe) |
 | `track-genuine-savings.sh` | PostToolUse:mcp__j*__ | Tracks genuine token savings to JSON |
 
 ---
@@ -223,12 +221,6 @@ The key sections:
         "matcher": "mcp__jdocmunch__index_local",
         "hooks": [
           { "type": "command", "command": "bash .claude/hooks/jmunch-sentinel-writer.sh" }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "bash .claude/hooks/reindex-after-commit.sh" }
         ]
       },
       {
@@ -364,10 +356,6 @@ Claude spawns a subagent
 Claude edits a file
   -> reindex-after-edit.sh fires (debounced 30s)
   -> Prompts Claude to re-run index_folder/index_local
-
-Claude commits
-  -> reindex-after-commit.sh nudges Claude to re-index
-  -> Soft nudge (no sentinel deletion) — safe for subagents
 
 Statusline renders
   -> Reads _genuine_savings.json

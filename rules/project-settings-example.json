@@ -76,15 +76,6 @@
         ]
       },
       {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/reindex-after-commit.sh"
-          }
-        ]
-      },
-      {
         "matcher": "mcp__jcodemunch__*",
         "hooks": [
           {

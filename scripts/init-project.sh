@@ -69,7 +69,6 @@ HOOKS=(
   jcodemunch-nudge.sh
   jdocmunch-nudge.sh
   reindex-after-edit.sh
-  reindex-after-commit.sh
   track-genuine-savings.sh
 )
 
@@ -281,15 +280,6 @@ else
           {
             "type": "command",
             "command": "bash .claude/hooks/jmunch-sentinel-writer.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/reindex-after-commit.sh"
           }
         ]
       },

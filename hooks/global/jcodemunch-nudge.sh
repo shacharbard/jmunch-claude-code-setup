@@ -9,8 +9,18 @@
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('file_path',''))" 2>/dev/null)
 
-# Only enforce for Python and TypeScript code files
-if [[ "$FILE_PATH" == *.py || "$FILE_PATH" == *.ts || "$FILE_PATH" == *.tsx ]]; then
+# Check if file is a code type supported by jCodeMunch (40+ languages)
+is_code_file() {
+  case "$1" in
+    *.py|*.ts|*.tsx|*.js|*.jsx|*.go|*.rs|*.java|*.php|*.dart|*.cs|*.c|*.cpp|*.h|*.hpp|\
+    *.swift|*.ex|*.exs|*.rb|*.pl|*.pm|*.gd|*.kt|*.scala|*.hs|*.jl|*.r|*.R|*.lua|*.sh|\
+    *.css|*.sql|*.vue|*.groovy|*.m|*.proto|*.hcl|*.graphql|*.nix|*.asm|*.toml|*.xml)
+      return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+if is_code_file "$FILE_PATH"; then
   BASENAME=$(basename "$FILE_PATH")
 
   # Allow exceptions: config-like files, test fixtures

@@ -185,7 +185,6 @@ hooks/
     jmunch-session-start.sh        # SessionStart — injects index refresh prompt
     jmunch-session-gate.sh         # PreToolUse:* — blocks all tools until indexes ready
     jmunch-sentinel-writer.sh      # PostToolUse — marks indexes as refreshed
-    reindex-after-commit.sh        # PostToolUse:Bash — re-index after git commits
     track-genuine-savings.sh       # PostToolUse — tracks jCodeMunch/jDocMunch token savings
     track-genuine-savings-ctx.sh   # PostToolUse — tracks context-mode token savings (opt-in)
 scripts/
@@ -246,9 +245,6 @@ Claude edits a file
   -> reindex-after-edit.sh fires (debounced 30s)
   -> Prompts Claude to re-run index_folder/index_local
 
-Claude commits
-  -> reindex-after-commit.sh nudges Claude to re-index
-  -> Soft nudge (no sentinel deletion) — safe for subagents
 ```
 
 ### Genuine Token Savings (`_genuine_savings.json`)

@@ -3,6 +3,11 @@
 All notable changes to this project are documented here.
 Updated automatically on each release.
 
+## v1.0.7
+
+- fix(hooks): expand file type coverage and remove redundant commit hook
+
+
 ## v1.0.6
 
 - fix(muninn): use claude mcp add --scope user instead of ~/.claude/.mcp.json

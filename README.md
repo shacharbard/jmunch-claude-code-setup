@@ -1,11 +1,11 @@
 # jCodeMunch + jDocMunch Setup for Claude Code
 
-Hooks, rules, and statusline integration for [jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp) and [jDocMunch](https://github.com/jgravelle/jdocmunch-mcp) — two excellent MCP servers created by [J. Gravelle (jgravelle)](https://github.com/jgravelle) that dramatically reduce token usage in Claude Code. Optional [context-mode](https://github.com/mksglu/context-mode) integration for large data files and command outputs. Optional [MuninnDB Lite](https://github.com/Aperrix/muninndb-lite) integration for persistent cross-session memory.
+Hooks, rules, and statusline integration for [jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp) and [jDocMunch](https://github.com/jgravelle/jdocmunch-mcp) — two excellent MCP servers created by [J. Gravelle (jgravelle)](https://github.com/jgravelle) that dramatically reduce token usage in Claude Code. Optional [context-mode](https://github.com/mksglu/context-mode) integration for large data files and command outputs. Optional [MuninnDB Lite](https://github.com/Aperrix/muninndb-lite) integration for persistent cross-session memory, created by [MJ Bonanno](https://scrypster.com).
 
 > **Credit where it's due:**
 > - [jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp) and [jDocMunch](https://github.com/jgravelle/jdocmunch-mcp) are built and maintained by [J. Gravelle](https://github.com/jgravelle). All the clever indexing and symbol extraction is jgravelle's work.
 > - [context-mode](https://github.com/mksglu/context-mode) is built and maintained by [mksglu](https://github.com/mksglu). The sandboxed execution, FTS5 indexing, and session persistence are mksglu's work.
-> - [MuninnDB Lite](https://github.com/Aperrix/muninndb-lite) is built and maintained by [Aperrix](https://github.com/Aperrix). The cognitive memory engine, Ebbinghaus decay, Hebbian learning, and entity graph are Aperrix's work.
+> - [MuninnDB Lite](https://github.com/Aperrix/muninndb-lite) is built and maintained by [MJ Bonanno (Aperrix)](https://scrypster.com) ([GitHub](https://github.com/Aperrix)). The cognitive memory engine, Ebbinghaus decay, Hebbian learning, and entity graph are MJ Bonanno's work.
 >
 > This repo does not contain any of those MCP servers — it provides a companion enforcement and tracking layer that helps Claude Code get the most out of them.
 
@@ -381,7 +381,7 @@ The `agent-jcodemunch-gate.sh` hook enforces jCodeMunch/jDocMunch instructions �
 - [jCodeMunch MCP](https://github.com/jgravelle/jcodemunch-mcp) by [jgravelle](https://github.com/jgravelle)
 - [jDocMunch MCP](https://github.com/jgravelle/jdocmunch-mcp) by [jgravelle](https://github.com/jgravelle)
 - [context-mode](https://github.com/mksglu/context-mode) by [mksglu](https://github.com/mksglu)
-- [MuninnDB Lite](https://github.com/Aperrix/muninndb-lite) by [Aperrix](https://github.com/Aperrix)
+- [MuninnDB Lite](https://github.com/Aperrix/muninndb-lite) by [MJ Bonanno (Aperrix)](https://scrypster.com)
 
 ## License
 

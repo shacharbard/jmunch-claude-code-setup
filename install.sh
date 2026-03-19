@@ -67,6 +67,12 @@ fi
 if ! command -v jdocmunch-mcp >/dev/null 2>&1; then
   echo "  ⚠ jdocmunch-mcp not found — install with: uv tool install jdocmunch-mcp"
 fi
+if ! command -v context-mode >/dev/null 2>&1 && ! command -v npx >/dev/null 2>&1; then
+  echo "  ⚠ context-mode not found — install with: npm install -g context-mode"
+fi
+if ! command -v muninndb-lite >/dev/null 2>&1; then
+  echo "  ⚠ muninndb-lite not found — install with: curl -fsSL https://raw.githubusercontent.com/Aperrix/muninndb-lite/develop/install.sh | sh"
+fi
 
 if [ "$MISSING" -gt 0 ]; then
   echo ""

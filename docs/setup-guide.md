@@ -1,19 +1,20 @@
-# Setting Up jCodeMunch & jDocMunch in a Claude Code Project
+# Setting Up jCodeMunch, jDocMunch & MuninnDB in a Claude Code Project
 
-A step-by-step guide to install, configure, and enforce jCodeMunch (code navigation) and jDocMunch (doc navigation) MCP servers in any Claude Code project — including hooks, rules, and statusline token savings counters.
+A step-by-step guide to install, configure, and enforce jCodeMunch (code navigation), jDocMunch (doc navigation), and optionally MuninnDB Lite (cross-session memory) MCP servers in any Claude Code project — including hooks, rules, and statusline token savings counters.
 
 ## What These Tools Do
 
 - **jCodeMunch** — indexes your code (Python, TypeScript, etc.) and lets Claude fetch individual functions/classes instead of reading entire files. Saves ~85-95% of tokens on code exploration.
 - **jDocMunch** — indexes your documentation (.md, .mdx, .rst) and lets Claude fetch specific sections instead of reading entire docs. Saves ~90-95% on doc lookups.
+- **MuninnDB Lite** (optional) — persists knowledge across Claude Code sessions. Memories strengthen with use, fade when stale, and form associative links. 36 MCP tools covering storage, recall, entity graphs, and consolidation.
 
-Both tools report `tokens_saved` in every response, which we track and display in the statusline.
+jCodeMunch and jDocMunch report `tokens_saved` in every response, which we track and display in the statusline.
 
 ---
 
 ## Step 1: Install the MCP Servers
 
-Both tools are Python packages. Install them globally with `uv`:
+jCodeMunch and jDocMunch are Python packages. Install them globally with `uv`:
 
 ```bash
 uv tool install jcodemunch-mcp
@@ -27,6 +28,21 @@ jdocmunch-mcp --help
 ```
 
 > **Why `uv tool`?** It installs each package in its own isolated virtualenv and adds the command to your PATH. No conflicts with other Python packages.
+
+### Optional: MuninnDB Lite
+
+MuninnDB Lite is a single Go binary — no runtime dependencies:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Aperrix/muninndb-lite/develop/install.sh | sh
+```
+
+Verify:
+```bash
+muninndb-lite --version
+```
+
+Data is stored at `~/.muninn/data` (created automatically on first use). Works without API keys — BM25 search is always available. Optional embedding providers (Ollama, OpenAI, etc.) add semantic vector search.
 
 ---
 
@@ -48,18 +64,24 @@ Create `.mcp.json` in your project root:
       "command": "jdocmunch-mcp",
       "args": [],
       "type": "stdio"
+    },
+    "muninn": {
+      "command": "muninndb-lite",
+      "args": ["mcp"],
+      "type": "stdio"
     }
   }
 }
 ```
 
-> This makes the tools available whenever Claude Code opens this project.
+> The muninn entry is optional — omit it if you don't need cross-session memory. This makes the tools available whenever Claude Code opens this project.
 
 ### Option B: Global registration (all projects)
 
 ```bash
 claude mcp add jcodemunch -- jcodemunch-mcp
 claude mcp add jdocmunch -- jdocmunch-mcp
+claude mcp add --transport stdio muninn -- muninndb-lite mcp
 ```
 
 Or add manually to `~/.claude/settings.json` under `mcpServers`.
@@ -96,6 +118,8 @@ mcp__jdocmunch__get_section
 mcp__jdocmunch__get_sections
 mcp__jdocmunch__delete_index
 ```
+
+If MuninnDB is enabled, also add all `mcp__muninn__*` tools — see `rules/allowed-tools.txt` for the full list (36 tools).
 
 > Without these, Claude will ask for permission on every single tool call.
 
@@ -362,3 +386,9 @@ Statusline renders
 
 **All tools blocked at session start**
 -> This is intentional. The session gate blocks everything until both indexes are refreshed. Just let Claude run `index_folder` and `index_local` first.
+
+**MuninnDB: "muninndb-lite: command not found"**
+-> Run the install script: `curl -fsSL https://raw.githubusercontent.com/Aperrix/muninndb-lite/develop/install.sh | sh` and ensure `~/.local/bin` is in your PATH.
+
+**MuninnDB: no memories found**
+-> Memories are stored at `~/.muninn/data`. The directory is created on first use. If it doesn't exist, the MCP server hasn't been connected yet — restart your Claude Code session.

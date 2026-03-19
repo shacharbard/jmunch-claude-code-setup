@@ -1,23 +1,25 @@
 # jCodeMunch + jDocMunch Setup for Claude Code
 
-Hooks, rules, and statusline integration for [jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp) and [jDocMunch](https://github.com/jgravelle/jdocmunch-mcp) — two excellent MCP servers created by [J. Gravelle (jgravelle)](https://github.com/jgravelle) that dramatically reduce token usage in Claude Code. Optional [context-mode](https://github.com/mksglu/context-mode) integration for large data files and command outputs.
+Hooks, rules, and statusline integration for [jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp) and [jDocMunch](https://github.com/jgravelle/jdocmunch-mcp) — two excellent MCP servers created by [J. Gravelle (jgravelle)](https://github.com/jgravelle) that dramatically reduce token usage in Claude Code. Optional [context-mode](https://github.com/mksglu/context-mode) integration for large data files and command outputs. Optional [MuninnDB Lite](https://github.com/Aperrix/muninndb-lite) integration for persistent cross-session memory.
 
 > **Credit where it's due:**
 > - [jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp) and [jDocMunch](https://github.com/jgravelle/jdocmunch-mcp) are built and maintained by [J. Gravelle](https://github.com/jgravelle). All the clever indexing and symbol extraction is jgravelle's work.
 > - [context-mode](https://github.com/mksglu/context-mode) is built and maintained by [mksglu](https://github.com/mksglu). The sandboxed execution, FTS5 indexing, and session persistence are mksglu's work.
+> - [MuninnDB Lite](https://github.com/Aperrix/muninndb-lite) is built and maintained by [Aperrix](https://github.com/Aperrix). The cognitive memory engine, Ebbinghaus decay, Hebbian learning, and entity graph are Aperrix's work.
 >
 > This repo does not contain any of those MCP servers — it provides a companion enforcement and tracking layer that helps Claude Code get the most out of them.
 
 ## What It Covers
 
-| File type | MCP server | What it does | Token savings |
-|-----------|-----------|--------------|---------------|
+| Layer | MCP server | What it does | Token savings |
+|-------|-----------|--------------|---------------|
 | Code (.py/.ts/.tsx) | **jCodeMunch** (by jgravelle) | Fetches individual functions via AST parsing | ~85-95% |
 | Docs (.md/.mdx/.rst) | **jDocMunch** (by jgravelle) | Fetches specific sections by heading | ~90-95% |
 | Data (.json/.html, large) | **context-mode** (by mksglu) | Sandboxes file reads, only filtered analysis enters context | ~90-98% |
 | Command outputs | **context-mode** (by mksglu) | Sandboxes test/build/search output | ~90-98% |
+| Cross-session memory | **MuninnDB Lite** (by Aperrix) | Persists knowledge across sessions with cognitive decay and entity graphs | N/A (memory, not navigation) |
 
-jCodeMunch + jDocMunch are **always included**. context-mode is **optional** — enable it per-project with a flag.
+jCodeMunch + jDocMunch are **always included**. context-mode and MuninnDB Lite are **optional** — enable them per-project with flags.
 
 This repo provides the enforcement stack that makes Claude **actually use** these tools instead of falling back to `Read` and `Bash`:
 
@@ -39,6 +41,9 @@ This repo provides the enforcement stack that makes Claude **actually use** thes
 uv tool install jcodemunch-mcp
 uv tool install jdocmunch-mcp
 
+# Optional: install MuninnDB Lite for cross-session memory
+curl -fsSL https://raw.githubusercontent.com/Aperrix/muninndb-lite/develop/install.sh | sh
+
 # Then install the hooks
 curl -sSL https://raw.githubusercontent.com/shacharbard/jmunch-claude-code-setup/stable/install.sh | bash
 ```
@@ -55,8 +60,11 @@ cd /path/to/your/project
 # jCodeMunch + jDocMunch only (default)
 bash ~/.jmunch-hooks/scripts/init-project.sh
 
-# jCodeMunch + jDocMunch + context-mode (full coverage)
+# jCodeMunch + jDocMunch + context-mode
 bash ~/.jmunch-hooks/scripts/init-project.sh --context-mode
+
+# Full stack: code + docs + data + memory
+bash ~/.jmunch-hooks/scripts/init-project.sh --context-mode --muninn
 ```
 
 Or do both install + project setup in one step:
@@ -69,7 +77,7 @@ This creates everything the project needs:
 - `.claude/hooks/` — symlinks to the global hooks (always up to date)
 - `.claude/settings.json` — hook registrations (session gate, nudges, agent gate, savings tracking)
 - `.claude/settings.local.json` — MCP tool permissions (no approval prompts)
-- `.mcp.json` — MCP server config (jcodemunch + jdocmunch, optionally context-mode)
+- `.mcp.json` — MCP server config (jcodemunch + jdocmunch, optionally context-mode and muninn)
 
 Safe to re-run — skips existing files, backs up before overwriting.
 
@@ -82,6 +90,19 @@ Safe to re-run — skips existing files, backs up before overwriting.
 | Already have context-mode installed via npm | `--context-mode` just registers the hooks and MCP config — it doesn't install context-mode itself. The `.mcp.json` uses `npx -y context-mode` which auto-downloads on first use. |
 | Don't use context-mode and don't want it | Do nothing. The default setup doesn't touch context-mode. Even if the hooks are symlinked globally, they check your project's `.mcp.json` before doing anything — no context-mode in `.mcp.json` = no enforcement, zero impact. |
 | Want to add context-mode to a project later | Re-run `init-project.sh --context-mode` — it adds what's missing without overwriting existing config. |
+
+### MuninnDB Lite: do I need it?
+
+| If you... | Use |
+|-----------|-----|
+| Want Claude to remember facts, decisions, and patterns across sessions | `init-project.sh --muninn` — adds persistent cognitive memory |
+| Work across multiple projects and want shared knowledge | `--muninn` — MuninnDB is global, memories are available in all projects |
+| Only need code/doc navigation within a single session | Do nothing. MuninnDB is opt-in. |
+| Already use Claude Code's built-in file-based memory | Both can co-exist. File-based memory stays human-readable and project-scoped. MuninnDB adds semantic search, cognitive decay, and entity graphs. |
+
+MuninnDB Lite is a single Go binary (~16 MB) with no runtime dependencies. Data is stored at `~/.muninn/data`. Works without API keys (BM25 search); optional embedding providers (Ollama, OpenAI, etc.) add semantic vector search.
+
+> **Note:** MuninnDB Lite is alpha software (v0.4.2-alpha-lite) under BSL 1.1 license (free for individuals, converts to Apache 2.0 in 2030).
 
 ### Add CLAUDE.md rules
 
@@ -167,7 +188,6 @@ scripts/
   init-project.sh                  # Set up jmunch enforcement in a new project (one command)
   sync-hooks.sh                    # Symlink all hooks to ~/.claude/hooks/ (with --verify)
   release.command                  # Double-click to tag + release to stable branch
-  update-mcp-servers.command       # Double-click to update MCP server packages
   generate-checksums.sh            # Regenerate CHECKSUMS.sha256 for a release
 rules/
   global-claude-md.md              # CLAUDE.md rules for ~/.claude/CLAUDE.md
@@ -335,6 +355,16 @@ If context-mode is enabled, add this block after the above:
 - Bash only for: git status/add/commit/push, ls/mkdir/mv, package installs, file redirects
 ```
 
+If MuninnDB is enabled, add this block after the above:
+
+```
+**Cross-session memory:** Use MuninnDB MCP tools for persistent knowledge.
+- mcp__muninn__muninn_recall to retrieve relevant memories before starting work
+- mcp__muninn__muninn_remember to store important discoveries, decisions, or patterns
+- mcp__muninn__muninn_where_left_off to resume context from previous sessions
+- Do NOT store raw data — store the distilled insight instead
+```
+
 The `agent-jcodemunch-gate.sh` hook enforces jCodeMunch/jDocMunch instructions — spawning is blocked if these are missing.
 
 ## Requirements
@@ -344,17 +374,20 @@ The `agent-jcodemunch-gate.sh` hook enforces jCodeMunch/jDocMunch instructions �
 - `jq` for JSON parsing in hooks
 - `python3` for hook input parsing
 - `bc` for statusline number formatting
+- `curl` for MuninnDB Lite installation (optional)
 
 ## Credits
 
 - [jCodeMunch MCP](https://github.com/jgravelle/jcodemunch-mcp) by [jgravelle](https://github.com/jgravelle)
 - [jDocMunch MCP](https://github.com/jgravelle/jdocmunch-mcp) by [jgravelle](https://github.com/jgravelle)
 - [context-mode](https://github.com/mksglu/context-mode) by [mksglu](https://github.com/mksglu)
+- [MuninnDB Lite](https://github.com/Aperrix/muninndb-lite) by [Aperrix](https://github.com/Aperrix)
 
 ## License
 
 The hooks, rules, statusline scripts, and documentation in this repository are licensed under the [MIT License](LICENSE).
 
-This repo does **not** include jCodeMunch, jDocMunch, or context-mode — only configuration and enforcement tooling that works with them. The MCP servers are separate projects by their respective authors and are subject to their own licenses:
+This repo does **not** include jCodeMunch, jDocMunch, context-mode, or MuninnDB Lite — only configuration and enforcement tooling that works with them. The MCP servers are separate projects by their respective authors and are subject to their own licenses:
 - jCodeMunch/jDocMunch: see [jcodemunch-mcp](https://github.com/jgravelle/jcodemunch-mcp) and [jdocmunch-mcp](https://github.com/jgravelle/jdocmunch-mcp)
 - context-mode: [ELv2 (Elastic License v2)](https://github.com/mksglu/context-mode/blob/main/LICENSE)
+- MuninnDB Lite: [BSL 1.1](https://github.com/Aperrix/muninndb-lite/blob/develop/LICENSE) (free for individuals, converts to Apache 2.0 in 2030)

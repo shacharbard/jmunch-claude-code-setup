@@ -7,6 +7,8 @@
 # Usage:
 #   bash ~/.jmunch-hooks/scripts/init-project.sh                  # jCodeMunch + jDocMunch only
 #   bash ~/.jmunch-hooks/scripts/init-project.sh --context-mode   # + context-mode enforcement
+#   bash ~/.jmunch-hooks/scripts/init-project.sh --muninn         # + MuninnDB cross-session memory
+#   bash ~/.jmunch-hooks/scripts/init-project.sh --context-mode --muninn  # full stack
 #
 # What it does:
 #   1. Symlinks hooks from ~/.claude/hooks/ into .claude/hooks/
@@ -23,11 +25,13 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROJECT_DIR="$(pwd)"
 GLOBAL_HOOKS="$HOME/.claude/hooks"
 ENABLE_CTX=false
+ENABLE_MUNINN=false
 
 # Parse args
 for arg in "$@"; do
   case "$arg" in
     --context-mode) ENABLE_CTX=true ;;
+    --muninn) ENABLE_MUNINN=true ;;
   esac
 done
 
@@ -37,6 +41,7 @@ echo "================================="
 echo ""
 echo "  Project: $PROJECT_DIR"
 echo "  Context-mode: $([ "$ENABLE_CTX" = true ] && echo "enabled" || echo "disabled (use --context-mode to enable)")"
+echo "  MuninnDB:     $([ "$ENABLE_MUNINN" = true ] && echo "enabled" || echo "disabled (use --muninn to enable)")"
 echo ""
 
 # --- Guard: don't init inside the setup repo itself ---
@@ -109,15 +114,30 @@ if [ -f .mcp.json ]; then
       echo "  ✓ Added context-mode to .mcp.json"
     fi
   fi
-else
-  if [ "$ENABLE_CTX" = true ]; then
-    cp "$REPO_ROOT/rules/mcp-example.json" .mcp.json
-    echo "  ✓ .mcp.json created (jcodemunch + jdocmunch + context-mode)"
-  else
-    # Create without context-mode
-    jq 'del(.mcpServers["context-mode"])' "$REPO_ROOT/rules/mcp-example.json" > .mcp.json
-    echo "  ✓ .mcp.json created (jcodemunch + jdocmunch)"
+  # Add muninn if enabled and missing
+  if [ "$ENABLE_MUNINN" = true ]; then
+    if jq -e '.mcpServers.muninn' .mcp.json >/dev/null 2>&1; then
+      echo "  ○ .mcp.json already has muninn configured"
+    else
+      jq '.mcpServers.muninn = {"command":"muninndb-lite","args":["mcp"],"type":"stdio"}' .mcp.json > .mcp.json.tmp && mv .mcp.json.tmp .mcp.json
+      echo "  ✓ Added muninn to .mcp.json"
+    fi
   fi
+else
+  # Start from the full example, then strip what's not enabled
+  cp "$REPO_ROOT/rules/mcp-example.json" .mcp.json
+  COMPONENTS="jcodemunch + jdocmunch"
+  if [ "$ENABLE_CTX" != true ]; then
+    jq 'del(.mcpServers["context-mode"])' .mcp.json > .mcp.json.tmp && mv .mcp.json.tmp .mcp.json
+  else
+    COMPONENTS="$COMPONENTS + context-mode"
+  fi
+  if [ "$ENABLE_MUNINN" != true ]; then
+    jq 'del(.mcpServers.muninn)' .mcp.json > .mcp.json.tmp && mv .mcp.json.tmp .mcp.json
+  else
+    COMPONENTS="$COMPONENTS + muninn"
+  fi
+  echo "  ✓ .mcp.json created ($COMPONENTS)"
 fi
 echo ""
 
@@ -136,7 +156,10 @@ else
   TOOLS_JSON=$(grep -v '^#' "$REPO_ROOT/rules/allowed-tools.txt" | grep -v '^$' | jq -R . | jq -s .)
   SERVERS='["jcodemunch", "jdocmunch"]'
   if [ "$ENABLE_CTX" = true ]; then
-    SERVERS='["jcodemunch", "jdocmunch", "context-mode"]'
+    SERVERS=$(echo "$SERVERS" | jq '. + ["context-mode"]')
+  fi
+  if [ "$ENABLE_MUNINN" = true ]; then
+    SERVERS=$(echo "$SERVERS" | jq '. + ["muninn"]')
   fi
   jq -n \
     --argjson tools "$TOOLS_JSON" \
@@ -303,6 +326,11 @@ if [ "$ENABLE_CTX" = true ]; then
 echo "    ✓ context-mode (data files: .json/.html, command outputs)"
 else
 echo "    ○ context-mode (disabled — re-run with --context-mode to enable)"
+fi
+if [ "$ENABLE_MUNINN" = true ]; then
+echo "    ✓ MuninnDB    (cross-session memory)"
+else
+echo "    ○ MuninnDB    (disabled — re-run with --muninn to enable)"
 fi
 echo ""
 echo "  Next: Start a Claude Code session in this project."

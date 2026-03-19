@@ -3,6 +3,12 @@
 All notable changes to this project are documented here.
 Updated automatically on each release.
 
+## v1.0.6
+
+- fix(muninn): use claude mcp add --scope user instead of ~/.claude/.mcp.json
+- feat(muninn): recommend global MuninnDB installation over per-project
+
+
 ## v1.0.5
 
 - docs(readme): credit MJ Bonanno by name for MuninnDB Lite

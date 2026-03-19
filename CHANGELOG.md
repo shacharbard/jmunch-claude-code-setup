@@ -3,6 +3,11 @@
 All notable changes to this project are documented here.
 Updated automatically on each release.
 
+## v1.0.8
+
+- fix(hooks): redirect context-mode-bash-nudge block message to stderr
+
+
 ## v1.0.7
 
 - fix(hooks): expand file type coverage and remove redundant commit hook

@@ -1,5 +1,5 @@
 90c44e50994ef844d51f4a6f6844c93aa028610dfb26d5b52040d51974dcc8c6  hooks/global/auto-update-hooks.sh
-33e764dbf2e491702672403f2c9adde1863cc9a1296a7875ae765be947c5a40d  hooks/global/context-mode-bash-nudge.sh
+40129f13c649012cdb8ca1a78b3b80597d00117bdc838498fea6d71532eacfc7  hooks/global/context-mode-bash-nudge.sh
 0d2302da6c322506d0ad3ffabc48b03717a155d37c3c47102d1eaaf3c15ffc65  hooks/global/context-mode-nudge.sh
 1aea27f6fc01cd5eabafdb1fad9316e23cf78a3c6e6ddad4ee0e243064c0512a  hooks/global/jcodemunch-nudge.sh
 05e410600a0386326274c32f61f65d140352bd786ec9fee56e8612b773f0b2a9  hooks/global/jdocmunch-nudge.sh

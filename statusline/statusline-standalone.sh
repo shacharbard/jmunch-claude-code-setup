@@ -40,12 +40,15 @@ format_tokens() {
     fi
 }
 
-# Read genuine savings (not the optimistic _savings.json)
-genuine_file="$HOME/.code-index/_genuine_savings.json"
+# Read genuine savings from separate files
+jcm_file="$HOME/.code-index/_genuine_savings.json"
+jdm_file="$HOME/.doc-index/_genuine_savings.json"
 jcm_raw=0; jdm_raw=0
-if [ -f "$genuine_file" ]; then
-    jcm_raw=$(jq -r '[.by_tool // {} | to_entries[] | select(.key | startswith("mcp__jcodemunch__")) | .value] | add // 0' "$genuine_file" 2>/dev/null || echo 0)
-    jdm_raw=$(jq -r '[.by_tool // {} | to_entries[] | select(.key | startswith("mcp__jdocmunch__")) | .value] | add // 0' "$genuine_file" 2>/dev/null || echo 0)
+if [ -f "$jcm_file" ]; then
+    jcm_raw=$(jq -r '.total_genuine_tokens_saved // 0' "$jcm_file" 2>/dev/null || echo 0)
+fi
+if [ -f "$jdm_file" ]; then
+    jdm_raw=$(jq -r '.total_genuine_tokens_saved // 0' "$jdm_file" 2>/dev/null || echo 0)
 fi
 jcm=$(format_tokens "$jcm_raw")
 jdm=$(format_tokens "$jdm_raw")

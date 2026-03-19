@@ -43,28 +43,32 @@ format_tokens() {
   fi
 }
 
-# Use GENUINE savings from JSONL history files
-# history tracks all jCodeMunch + jDocMunch events (split by tool prefix)
-# ctx_history tracks all context-mode events
-history_file="$HOME/.code-index/_genuine_savings_history.jsonl"
+# Use GENUINE savings from separate history files
+# JCM history: ~/.code-index/_genuine_savings_history.jsonl
+# JDM history: ~/.doc-index/_genuine_savings_history.jsonl
+# CTX history: ~/.code-index/_genuine_savings_ctx_history.jsonl
+jcm_history_file="$HOME/.code-index/_genuine_savings_history.jsonl"
+jdm_history_file="$HOME/.doc-index/_genuine_savings_history.jsonl"
 ctx_history_file="$HOME/.code-index/_genuine_savings_ctx_history.jsonl"
 ctx_file="$HOME/.code-index/_genuine_savings_ctx.json"
-genuine_dir="$HOME/.code-index"
 
 jcm_raw=0; jdm_raw=0; ctx_raw=0
 jcm_today=0; jdm_today=0; ctx_today=0
 today=$(date -u +%Y-%m-%d)
 
-# JCM + JDM totals and today from history (split by tool prefix)
-if [ -f "$history_file" ]; then
-  jcm_raw=$(jq -s '[.[] | select(.tool | startswith("mcp__jcodemunch__")) | .tokens_saved] | add // 0' "$history_file" 2>/dev/null || echo "0")
-  jdm_raw=$(jq -s '[.[] | select(.tool | startswith("mcp__jdocmunch__")) | .tokens_saved] | add // 0' "$history_file" 2>/dev/null || echo "0")
-  jcm_today=$(jq -s --arg d "$today" '[.[] | select(.ts[:10] == $d) | select(.tool | startswith("mcp__jcodemunch__")) | .tokens_saved] | add // 0' "$history_file" 2>/dev/null || echo "0")
-  jdm_today=$(jq -s --arg d "$today" '[.[] | select(.ts[:10] == $d) | select(.tool | startswith("mcp__jdocmunch__")) | .tokens_saved] | add // 0' "$history_file" 2>/dev/null || echo "0")
+# JCM totals and today
+if [ -f "$jcm_history_file" ]; then
+  jcm_raw=$(jq -s '[.[].tokens_saved] | add // 0' "$jcm_history_file" 2>/dev/null || echo "0")
+  jcm_today=$(jq -s --arg d "$today" '[.[] | select(.ts[:10] == $d) | .tokens_saved] | add // 0' "$jcm_history_file" 2>/dev/null || echo "0")
 fi
 
-# JDM fallback: jDocMunch reports tokens_saved=0 for most ops (search returns summaries),
-# so history may have no JDM entries. Fall back to jDocMunch's built-in tracker.
+# JDM totals and today
+if [ -f "$jdm_history_file" ]; then
+  jdm_raw=$(jq -s '[.[].tokens_saved] | add // 0' "$jdm_history_file" 2>/dev/null || echo "0")
+  jdm_today=$(jq -s --arg d "$today" '[.[] | select(.ts[:10] == $d) | .tokens_saved] | add // 0' "$jdm_history_file" 2>/dev/null || echo "0")
+fi
+
+# JDM fallback: if no genuine history yet, fall back to jDocMunch's built-in tracker
 if [ "$jdm_raw" -eq 0 ] 2>/dev/null; then
   jdm_builtin="$HOME/.doc-index/_savings.json"
   [ -f "$jdm_builtin" ] && jdm_raw=$(jq -r '.total_tokens_saved // 0' "$jdm_builtin" 2>/dev/null || echo "0")

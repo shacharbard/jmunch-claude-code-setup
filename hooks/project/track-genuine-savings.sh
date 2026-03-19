@@ -6,7 +6,9 @@
 # For jDocMunch tools that report tokens_saved=0 (search_sections returns summaries),
 # estimates savings as: baseline_tokens - actual_output_tokens
 #
-# Writes to ~/.code-index/_genuine_savings.json + _genuine_savings_history.jsonl
+# Writes to:
+#   jCodeMunch: ~/.code-index/_genuine_savings.json + _genuine_savings_history.jsonl
+#   jDocMunch:  ~/.doc-index/_genuine_savings.json + _genuine_savings_history.jsonl
 #
 # Install: Copy to .claude/hooks/ in your project
 # Register: PostToolUse matchers "mcp__jcodemunch__*" and "mcp__jdocmunch__*"
@@ -18,7 +20,6 @@ python3 -c "
 import json, os, sys, datetime
 
 agent_suffix = '_' + os.environ.get('CLAUDE_AGENT_NAME', '') if os.environ.get('CLAUDE_AGENT_NAME') else ''
-savings_file = os.path.expanduser(os.environ.get('HOME', '~') + '/.code-index/_genuine_savings' + agent_suffix + '.json')
 raw = sys.stdin.read()
 
 try:
@@ -27,6 +28,15 @@ except:
     sys.exit(0)
 
 tool_name = d.get('tool_name', '')
+
+# Route to the correct directory based on tool prefix
+home = os.environ.get('HOME', '~')
+if tool_name.startswith('mcp__jdocmunch__'):
+    savings_dir = os.path.expanduser(home + '/.doc-index')
+else:
+    savings_dir = os.path.expanduser(home + '/.code-index')
+savings_file = os.path.join(savings_dir, '_genuine_savings' + agent_suffix + '.json')
+log_file = os.path.join(savings_dir, '_genuine_savings_history.jsonl')
 
 # Only count genuine tools
 GENUINE_TOOLS = {
@@ -110,7 +120,6 @@ with open(savings_file, 'w') as f:
     json.dump(data, f, indent=2)
 
 # Append to JSONL history log (one line per savings event)
-log_file = os.path.expanduser(os.environ.get('HOME', '~') + '/.code-index/_genuine_savings_history.jsonl')
 entry = {
     'ts': datetime.datetime.utcnow().isoformat() + 'Z',
     'agent': os.environ.get('CLAUDE_AGENT_NAME', ''),

@@ -150,7 +150,7 @@ elif [ -n "$IS_PYTHON_SCRIPT" ]; then
   REASON="Python script output can be large"
 fi
 
-cat <<EOF
+cat <<EOF >&2
 BLOCKED: $REASON. Use context-mode ctx_execute instead of Bash to keep large output out of conversation context.
 
 IMPORTANT: ctx_execute runs in a temp sandbox, so you MUST cd to the project root first.

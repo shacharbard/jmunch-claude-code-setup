@@ -44,14 +44,13 @@ muninndb-lite --version
 
 Data is stored at `~/.muninn/data` (created automatically on first use). Works without API keys — BM25 search is always available. Optional embedding providers (Ollama, OpenAI, etc.) add semantic vector search.
 
-**Recommended: register globally.** Since MuninnDB data always lives at `~/.muninn/data` regardless of config location, global registration is the natural default — it makes memories available in every project automatically.
+**Recommended: register at user scope.** Since MuninnDB data always lives at `~/.muninn/data` regardless of config location, user-scoped registration is the natural default — it makes memories available in every project automatically.
 
-If `~/.claude/.mcp.json` doesn't exist yet:
 ```bash
-cp rules/global-mcp-muninn.json ~/.claude/.mcp.json
+claude mcp add muninn --scope user -- muninndb-lite mcp
 ```
 
-If it already exists, merge the `muninn` entry from `rules/global-mcp-muninn.json` into it.
+This writes the MuninnDB entry to `~/.claude.json` under `mcpServers`. See `rules/global-mcp-muninn.json` for the equivalent JSON structure.
 
 > Per-project config (`init-project.sh --muninn`) is only needed if you want MuninnDB in some projects but not others.
 
@@ -95,7 +94,7 @@ Or add manually to `~/.claude/settings.json` under `mcpServers`.
 
 Since MuninnDB data always lives at `~/.muninn/data` regardless of where the MCP server is configured, **global registration is recommended** — it makes memories available in every project automatically.
 
-Copy `rules/global-mcp-muninn.json` to `~/.claude/.mcp.json` (or merge the `muninn` entry if the file already exists). Use `init-project.sh --muninn` only if you need per-project control over whether MuninnDB starts.
+Register with `claude mcp add muninn --scope user -- muninndb-lite mcp`. This writes to `~/.claude.json`, making MuninnDB available in all projects. See `rules/global-mcp-muninn.json` for the equivalent JSON structure. Use `init-project.sh --muninn` only if you need per-project control over whether MuninnDB starts.
 
 ---
 

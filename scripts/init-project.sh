@@ -116,8 +116,8 @@ if [ -f .mcp.json ]; then
   fi
   # Add muninn if enabled and missing
   if [ "$ENABLE_MUNINN" = true ]; then
-    if jq -e '.mcpServers.muninn' "$HOME/.claude/.mcp.json" >/dev/null 2>&1; then
-      echo "  ○ MuninnDB already configured globally in ~/.claude/.mcp.json — skipping per-project config"
+    if jq -e '.mcpServers.muninn' "$HOME/.claude.json" >/dev/null 2>&1; then
+      echo "  ○ MuninnDB already configured at user scope in ~/.claude.json — skipping per-project config"
     elif jq -e '.mcpServers.muninn' .mcp.json >/dev/null 2>&1; then
       echo "  ○ .mcp.json already has muninn configured"
     else
@@ -136,9 +136,9 @@ else
   fi
   if [ "$ENABLE_MUNINN" != true ]; then
     jq 'del(.mcpServers.muninn)' .mcp.json > .mcp.json.tmp && mv .mcp.json.tmp .mcp.json
-  elif jq -e '.mcpServers.muninn' "$HOME/.claude/.mcp.json" >/dev/null 2>&1; then
+  elif jq -e '.mcpServers.muninn' "$HOME/.claude.json" >/dev/null 2>&1; then
     jq 'del(.mcpServers.muninn)' .mcp.json > .mcp.json.tmp && mv .mcp.json.tmp .mcp.json
-    echo "  ○ MuninnDB already configured globally in ~/.claude/.mcp.json — skipping per-project config"
+    echo "  ○ MuninnDB already configured at user scope in ~/.claude.json — skipping per-project config"
   else
     COMPONENTS="$COMPONENTS + muninn"
   fi

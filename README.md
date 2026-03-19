@@ -45,9 +45,7 @@ uv tool install jdocmunch-mcp
 curl -fsSL https://raw.githubusercontent.com/Aperrix/muninndb-lite/develop/install.sh | sh
 
 # Recommended: register MuninnDB globally (data lives at ~/.muninn/data regardless)
-# If ~/.claude/.mcp.json exists, merge the muninn entry from rules/global-mcp-muninn.json into it.
-# If it doesn't exist yet:
-cp rules/global-mcp-muninn.json ~/.claude/.mcp.json
+claude mcp add muninn --scope user -- muninndb-lite mcp
 
 # Then install the hooks
 curl -sSL https://raw.githubusercontent.com/shacharbard/jmunch-claude-code-setup/stable/install.sh | bash
@@ -100,13 +98,13 @@ Safe to re-run — skips existing files, backs up before overwriting.
 
 | If you... | Use |
 |-----------|-----|
-| Want Claude to remember facts, decisions, and patterns across sessions | **Global install recommended** — copy `rules/global-mcp-muninn.json` to `~/.claude/.mcp.json` (or merge the muninn entry if the file exists). This makes MuninnDB available in every project automatically. |
-| Work across multiple projects and want shared knowledge | Global install — MuninnDB data lives at `~/.muninn/data` regardless of config location, so global is the natural fit |
+| Want Claude to remember facts, decisions, and patterns across sessions | **Global install recommended** — run `claude mcp add muninn --scope user -- muninndb-lite mcp`. This registers MuninnDB as a user-scoped MCP server, making it available in every project automatically. |
+| Work across multiple projects and want shared knowledge | Global install — MuninnDB data lives at `~/.muninn/data` regardless of config location, so user-scoped is the natural fit |
 | Want per-project control over whether MuninnDB starts | `init-project.sh --muninn` — adds a per-project `.mcp.json` entry. Only needed if you want MuninnDB in some projects but not others. |
 | Only need code/doc navigation within a single session | Do nothing. MuninnDB is opt-in. |
 | Already use Claude Code's built-in file-based memory | Both can co-exist. File-based memory stays human-readable and project-scoped. MuninnDB adds semantic search, cognitive decay, and entity graphs. |
 
-MuninnDB Lite is a single Go binary (~16 MB) with no runtime dependencies. Data is stored at `~/.muninn/data` — this is always the same location regardless of whether MuninnDB is configured globally or per-project. The config only controls whether the MCP server starts, not where data lives. Works without API keys (BM25 search); optional embedding providers (Ollama, OpenAI, etc.) add semantic vector search.
+MuninnDB Lite is a single Go binary (~16 MB) with no runtime dependencies. Data is stored at `~/.muninn/data` — this is always the same location regardless of whether MuninnDB is configured at user scope or per-project. The config only controls whether the MCP server starts, not where data lives. Works without API keys (BM25 search); optional embedding providers (Ollama, OpenAI, etc.) add semantic vector search.
 
 > **Note:** MuninnDB Lite is alpha software (v0.4.2-alpha-lite) under BSL 1.1 license (free for individuals, converts to Apache 2.0 in 2030).
 

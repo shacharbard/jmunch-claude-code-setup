@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "muninn": {
+      "command": "muninndb-lite",
+      "args": ["mcp"],
+      "type": "stdio"
+    }
+  }
+}

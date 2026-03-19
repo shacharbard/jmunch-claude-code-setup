@@ -44,11 +44,22 @@ muninndb-lite --version
 
 Data is stored at `~/.muninn/data` (created automatically on first use). Works without API keys — BM25 search is always available. Optional embedding providers (Ollama, OpenAI, etc.) add semantic vector search.
 
+**Recommended: register globally.** Since MuninnDB data always lives at `~/.muninn/data` regardless of config location, global registration is the natural default — it makes memories available in every project automatically.
+
+If `~/.claude/.mcp.json` doesn't exist yet:
+```bash
+cp rules/global-mcp-muninn.json ~/.claude/.mcp.json
+```
+
+If it already exists, merge the `muninn` entry from `rules/global-mcp-muninn.json` into it.
+
+> Per-project config (`init-project.sh --muninn`) is only needed if you want MuninnDB in some projects but not others.
+
 ---
 
 ## Step 2: Register as MCP Servers
 
-### Option A: Project-level `.mcp.json` (recommended)
+### Option A: Project-level `.mcp.json` (recommended for jCodeMunch/jDocMunch)
 
 Create `.mcp.json` in your project root:
 
@@ -64,27 +75,27 @@ Create `.mcp.json` in your project root:
       "command": "jdocmunch-mcp",
       "args": [],
       "type": "stdio"
-    },
-    "muninn": {
-      "command": "muninndb-lite",
-      "args": ["mcp"],
-      "type": "stdio"
     }
   }
 }
 ```
 
-> The muninn entry is optional — omit it if you don't need cross-session memory. This makes the tools available whenever Claude Code opens this project.
+This makes the tools available whenever Claude Code opens this project.
 
-### Option B: Global registration (all projects)
+### Option B: Global registration
 
 ```bash
 claude mcp add jcodemunch -- jcodemunch-mcp
 claude mcp add jdocmunch -- jdocmunch-mcp
-claude mcp add --transport stdio muninn -- muninndb-lite mcp
 ```
 
 Or add manually to `~/.claude/settings.json` under `mcpServers`.
+
+### MuninnDB: global registration recommended
+
+Since MuninnDB data always lives at `~/.muninn/data` regardless of where the MCP server is configured, **global registration is recommended** — it makes memories available in every project automatically.
+
+Copy `rules/global-mcp-muninn.json` to `~/.claude/.mcp.json` (or merge the `muninn` entry if the file already exists). Use `init-project.sh --muninn` only if you need per-project control over whether MuninnDB starts.
 
 ---
 

@@ -70,6 +70,7 @@ HOOKS=(
   jdocmunch-nudge.sh
   reindex-after-edit.sh
   track-genuine-savings.sh
+  subagent-inject-mcp-tracking.sh
 )
 
 if [ "$ENABLE_CTX" = true ]; then
@@ -301,6 +302,16 @@ else
           }
         ]
       }${CTX_POST_HOOKS}
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/subagent-inject-mcp-tracking.sh"
+          }
+        ]
+      }
     ]
   }
 }

@@ -3,6 +3,12 @@
 All notable changes to this project are documented here.
 Updated automatically on each release.
 
+## v1.0.9
+
+- feat(hooks): add SubagentStart hook for MCP tracking injection + diagnostic script
+- fix(statusline): use server-side _savings.json as authoritative JCM/JDM total
+
+
 ## v1.0.8
 
 - fix(hooks): redirect context-mode-bash-nudge block message to stderr

@@ -68,10 +68,18 @@ if [ -f "$jdm_history_file" ]; then
   jdm_today=$(jq -s --arg d "$today" '[.[] | select(.ts[:10] == $d) | .tokens_saved] | add // 0' "$jdm_history_file" 2>/dev/null || echo "0")
 fi
 
-# JDM fallback: if no genuine history yet, fall back to jDocMunch's built-in tracker
-if [ "$jdm_raw" -eq 0 ] 2>/dev/null; then
-  jdm_builtin="$HOME/.doc-index/_savings.json"
-  [ -f "$jdm_builtin" ] && jdm_raw=$(jq -r '.total_tokens_saved // 0' "$jdm_builtin" 2>/dev/null || echo "0")
+# JCM authoritative total: use server-side _savings.json if higher than hook history
+jcm_builtin="$HOME/.code-index/_savings.json"
+if [ -f "$jcm_builtin" ]; then
+  jcm_builtin_val=$(jq -r '.total_tokens_saved // 0' "$jcm_builtin" 2>/dev/null || echo "0")
+  [ "$jcm_builtin_val" -gt "$jcm_raw" ] 2>/dev/null && jcm_raw=$jcm_builtin_val
+fi
+
+# JDM authoritative total: use server-side _savings.json if higher than hook history
+jdm_builtin="$HOME/.doc-index/_savings.json"
+if [ -f "$jdm_builtin" ]; then
+  jdm_builtin_val=$(jq -r '.total_tokens_saved // 0' "$jdm_builtin" 2>/dev/null || echo "0")
+  [ "$jdm_builtin_val" -gt "$jdm_raw" ] 2>/dev/null && jdm_raw=$jdm_builtin_val
 fi
 
 # CTX total: use the higher of history sum vs JSON accumulator

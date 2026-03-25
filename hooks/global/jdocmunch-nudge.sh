@@ -7,7 +7,7 @@
 # Register: PreToolUse matcher "Read" in settings.json
 
 INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('file_path',''))" 2>/dev/null)
+FILE_PATH=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('file_path','') or d.get('file_path',''))" 2>/dev/null)
 
 # Only enforce for documentation and structured files
 # Note: .json, .html, .htm are handled by context-mode-nudge.sh with smart routing

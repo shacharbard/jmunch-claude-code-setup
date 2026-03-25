@@ -12,7 +12,7 @@
 #                HTML with headings → jDocMunch, HTML without → context-mode
 
 INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('file_path',''))" 2>/dev/null)
+FILE_PATH=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('file_path','') or d.get('file_path',''))" 2>/dev/null)
 
 # Only enforce for JSON and HTML files
 if [[ "$FILE_PATH" == *.json || "$FILE_PATH" == *.html || "$FILE_PATH" == *.htm ]]; then
